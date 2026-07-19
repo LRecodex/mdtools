@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Minus, Square, Copy, X, FileText } from 'lucide-react'
+import { Minus, Square, Copy, X, FileText, HelpCircle } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { basename } from '../../lib/path'
 
@@ -8,6 +8,7 @@ export default function TitleBar(): React.JSX.Element {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot)
   const activeTabPath = useAppStore((s) => s.activeTabPath)
   const dirty = useAppStore((s) => s.tabs.find((t) => t.path === activeTabPath)?.dirty)
+  const setHelpOpen = useAppStore((s) => s.setHelpOpen)
 
   useEffect(() => {
     window.api.win.isMaximized().then(setMaximized)
@@ -26,7 +27,16 @@ export default function TitleBar(): React.JSX.Element {
         <FileText size={15} className="text-(--color-accent)" />
         <span className="select-none">{title}</span>
       </div>
-      <div className="flex h-full">
+      <div className="flex h-full items-center">
+        <button
+          type="button"
+          aria-label="Help"
+          title="Help"
+          className="app-region-no-drag mr-1 flex h-7 w-7 items-center justify-center rounded-md text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text)"
+          onClick={() => setHelpOpen(true)}
+        >
+          <HelpCircle size={15} />
+        </button>
         <button
           type="button"
           aria-label="Minimize"

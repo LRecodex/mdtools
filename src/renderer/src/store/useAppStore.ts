@@ -22,6 +22,7 @@ interface AppState {
   editorMode: Settings['editorMode']
   recentWorkspaces: string[]
   quickOpenOpen: boolean
+  helpOpen: boolean
   pendingCloseTab: string | null
   bootstrapped: boolean
   cursorPosition: { line: number; col: number } | null
@@ -46,6 +47,7 @@ interface AppState {
   setTheme: (theme: Settings['theme']) => void
   setEditorMode: (mode: Settings['editorMode']) => void
   setQuickOpenOpen: (open: boolean) => void
+  setHelpOpen: (open: boolean) => void
   handleWatchEvent: (event: WatchEvent) => void
 }
 
@@ -72,6 +74,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   editorMode: 'split',
   recentWorkspaces: [],
   quickOpenOpen: false,
+  helpOpen: false,
   pendingCloseTab: null,
   bootstrapped: false,
   cursorPosition: null,
@@ -268,6 +271,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),
+
+  setHelpOpen: (open) => set({ helpOpen: open }),
 
   handleWatchEvent: (event) => {
     const state = get()

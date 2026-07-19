@@ -41,6 +41,10 @@ export function useKeyboardShortcuts(): void {
             state.setTheme(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length])
           }
           break
+        case '/':
+          e.preventDefault()
+          state.setHelpOpen(!state.helpOpen)
+          break
         case 'tab':
           if (state.tabs.length > 1) {
             e.preventDefault()

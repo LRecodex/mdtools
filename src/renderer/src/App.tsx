@@ -6,6 +6,7 @@ import EditorPane from './components/Editor/EditorPane'
 import StatusBar from './components/StatusBar/StatusBar'
 import QuickOpen from './components/QuickOpen/QuickOpen'
 import UnsavedChangesDialog from './components/Dialogs/UnsavedChangesDialog'
+import HelpDialog from './components/Dialogs/HelpDialog'
 import EmptyState from './components/EmptyState/EmptyState'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
@@ -44,6 +45,7 @@ export default function App(): React.JSX.Element {
       </div>
       <QuickOpen />
       <UnsavedChangesDialog />
+      <HelpDialog />
     </div>
   )
 }
