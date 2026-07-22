@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 interface ConfirmDialogProps {
   title: string
   message: string
@@ -17,6 +19,17 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel
 }: ConfirmDialogProps): React.JSX.Element {
+  const cancelRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    cancelRef.current?.focus()
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [onCancel])
+
   return (
     <div
       className="text-select fixed inset-0 z-50 flex items-center justify-center bg-black/40"
@@ -24,11 +37,12 @@ export default function ConfirmDialog({
         if (e.target === e.currentTarget) onCancel()
       }}
     >
-      <div className="w-[380px] rounded-xl border border-(--color-border) bg-(--color-bg-elevated) p-5 shadow-2xl">
-        <h2 className="text-base font-semibold">{title}</h2>
+      <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" className="w-[380px] rounded-xl border border-(--color-border) bg-(--color-bg-elevated) p-5 shadow-2xl">
+        <h2 id="confirm-dialog-title" className="text-base font-semibold">{title}</h2>
         <p className="mt-2 text-sm text-(--color-text-muted)">{message}</p>
         <div className="mt-5 flex justify-end gap-2">
           <button
+            ref={cancelRef}
             type="button"
             className="rounded-md px-3 py-1.5 text-sm text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text)"
             onClick={onCancel}

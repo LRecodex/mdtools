@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { FilePlus2, FileText, LayoutTemplate, Search } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import EditorTabs from './EditorTabs'
 import ModeSwitcher from './ModeSwitcher'
 import MarkdownEditor from './MarkdownEditor'
 import MarkdownPreview from './MarkdownPreview'
+import FormattingToolbar from './FormattingToolbar'
+import type { MarkdownEditorHandle } from './formatting'
 
 const AUTOSAVE_DELAY_MS = 800
 const MIN_SPLIT_RATIO = 0.15
@@ -17,10 +19,14 @@ export default function EditorPane(): React.JSX.Element {
   const updateTabContent = useAppStore((s) => s.updateTabContent)
   const saveTab = useAppStore((s) => s.saveTab)
   const setCursorPosition = useAppStore((s) => s.setCursorPosition)
+  const workspaceRoot = useAppStore((s) => s.workspaceRoot)
+  const setQuickOpenOpen = useAppStore((s) => s.setQuickOpenOpen)
+  const setTemplateDialog = useAppStore((s) => s.setTemplateDialog)
 
   const activeTab = tabs.find((t) => t.path === activeTabPath)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const splitContainerRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<MarkdownEditorHandle>(null)
   const [splitRatio, setSplitRatio] = useState(0.5)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -59,7 +65,9 @@ export default function EditorPane(): React.JSX.Element {
     if (!activeTab?.dirty) return
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
-      saveTab(activeTab.path)
+      saveTab(activeTab.path).catch(() => {
+        // The status bar exposes the save error and the next edit retries autosave.
+      })
     }, AUTOSAVE_DELAY_MS)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -75,8 +83,24 @@ export default function EditorPane(): React.JSX.Element {
       <EditorTabs />
       {activeTab ? (
         <>
-          <div className="flex h-10 shrink-0 items-center justify-end border-b border-(--color-border) px-3">
-            <ModeSwitcher />
+          <div className="flex h-10 shrink-0 items-center justify-between border-b border-(--color-border) px-2">
+            {editorMode !== 'preview' ? (
+              <FormattingToolbar onFormat={(format) => editorRef.current?.applyFormat(format)} />
+            ) : (
+              <span className="min-w-0 flex-1 px-1 text-xs text-(--color-text-muted)">Preview</span>
+            )}
+            <div className="ml-2 flex shrink-0 items-center gap-1 border-l border-(--color-border) pl-2">
+              <button
+                type="button"
+                title="Replace content from a template (Ctrl+Shift+T)"
+                onClick={() => setTemplateDialog({ mode: 'replace', path: activeTab.path })}
+                className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text)"
+              >
+                <LayoutTemplate size={14} />
+                Templates
+              </button>
+              <ModeSwitcher />
+            </div>
           </div>
           <div ref={splitContainerRef} className="flex min-h-0 flex-1">
             {editorMode !== 'preview' && (
@@ -89,6 +113,7 @@ export default function EditorPane(): React.JSX.Element {
                 }
               >
                 <MarkdownEditor
+                  ref={editorRef}
                   path={activeTab.path}
                   value={activeTab.content}
                   onChange={(content) => updateTabContent(activeTab.path, content)}
@@ -115,9 +140,29 @@ export default function EditorPane(): React.JSX.Element {
           </div>
         </>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 text-(--color-text-muted)">
-          <FileText size={28} />
-          <p className="text-sm">Select a file from the sidebar to start editing</p>
+        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-(--color-text-muted)">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-(--color-bg-elevated)">
+            <FileText size={25} className="text-(--color-accent)" />
+          </div>
+          <h2 className="mt-4 text-base font-semibold text-(--color-text)">Ready for your next note</h2>
+          <p className="mt-1 max-w-sm text-sm">Open an existing Markdown file, or start from one of the built-in templates.</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => workspaceRoot && setTemplateDialog({ mode: 'create', dirPath: workspaceRoot })}
+              className="flex items-center gap-2 rounded-md bg-(--color-accent) px-3.5 py-2 text-sm font-medium text-(--color-accent-fg) hover:opacity-90"
+            >
+              <FilePlus2 size={15} /> New document
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuickOpenOpen(true)}
+              className="flex items-center gap-2 rounded-md border border-(--color-border) bg-(--color-bg-elevated) px-3.5 py-2 text-sm text-(--color-text) hover:bg-(--color-bg-inset)"
+            >
+              <Search size={15} /> Open a file
+            </button>
+          </div>
+          <p className="mt-4 text-xs">Tip: Ctrl+N creates a document · Ctrl+P quickly opens one</p>
         </div>
       )}
     </div>

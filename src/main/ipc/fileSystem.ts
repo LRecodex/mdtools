@@ -36,6 +36,14 @@ function withMarkdownExtension(name: string): string {
   return extname(name) ? name : `${name}.md`
 }
 
+function validateChildName(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed || trimmed === '.' || trimmed === '..' || /[\\/:*?"<>|]/.test(trimmed)) {
+    throw new Error('Invalid file or folder name')
+  }
+  return trimmed
+}
+
 const IGNORED_DIRS = new Set(['node_modules', '.git', 'dist', 'out', 'release', '.cache'])
 const SEARCH_RESULT_CAP = 200
 
@@ -82,21 +90,21 @@ export function registerFileSystemHandlers(): void {
     await fs.writeFile(path, content, 'utf-8')
   })
 
-  ipcMain.handle('fs:createFile', async (_event, dirPath: string, name: string) => {
-    const fileName = withMarkdownExtension(name)
+  ipcMain.handle('fs:createFile', async (_event, dirPath: string, name: string, content = '') => {
+    const fileName = withMarkdownExtension(validateChildName(name))
     const target = join(dirPath, fileName)
-    await fs.writeFile(target, '', { flag: 'wx' })
+    await fs.writeFile(target, content, { flag: 'wx', encoding: 'utf-8' })
     return target
   })
 
   ipcMain.handle('fs:createFolder', async (_event, dirPath: string, name: string) => {
-    const target = join(dirPath, name)
+    const target = join(dirPath, validateChildName(name))
     await fs.mkdir(target)
     return target
   })
 
   ipcMain.handle('fs:rename', async (_event, oldPath: string, newName: string) => {
-    const target = join(dirname(oldPath), newName)
+    const target = join(dirname(oldPath), validateChildName(newName))
     await fs.rename(oldPath, target)
     return target
   })

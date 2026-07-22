@@ -20,7 +20,14 @@ export default function EditorTabs(): React.JSX.Element {
             key={tab.path}
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             onClick={() => setActiveTab(tab.path)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                setActiveTab(tab.path)
+              }
+            }}
             onMouseDown={(e) => {
               if (e.button === 1) {
                 e.preventDefault()

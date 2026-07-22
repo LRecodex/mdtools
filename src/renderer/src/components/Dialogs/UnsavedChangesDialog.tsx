@@ -6,6 +6,7 @@ export default function UnsavedChangesDialog(): React.JSX.Element | null {
   const cancelCloseTab = useAppStore((s) => s.cancelCloseTab)
   const confirmCloseTab = useAppStore((s) => s.confirmCloseTab)
   const saveTab = useAppStore((s) => s.saveTab)
+  const saveError = useAppStore((s) => s.tabs.find((tab) => tab.path === pendingCloseTab)?.saveError)
 
   if (!pendingCloseTab) return null
 
@@ -21,6 +22,7 @@ export default function UnsavedChangesDialog(): React.JSX.Element | null {
         <p className="mt-2 text-sm text-(--color-text-muted)">
           "{basename(pendingCloseTab)}" has unsaved changes. Do you want to save before closing?
         </p>
+        {saveError && <p role="alert" className="mt-2 text-sm text-red-500">The file could not be saved. Check that it is still available and try again.</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
@@ -40,8 +42,12 @@ export default function UnsavedChangesDialog(): React.JSX.Element | null {
             type="button"
             className="rounded-md bg-(--color-accent) px-3 py-1.5 text-sm font-medium text-(--color-accent-fg) hover:opacity-90"
             onClick={async () => {
-              await saveTab(pendingCloseTab)
-              confirmCloseTab(pendingCloseTab)
+              try {
+                await saveTab(pendingCloseTab)
+                confirmCloseTab(pendingCloseTab)
+              } catch {
+                // Keep the dialog open so the user can retry or choose another action.
+              }
             }}
           >
             Save & Close

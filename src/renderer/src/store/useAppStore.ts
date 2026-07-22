@@ -8,7 +8,13 @@ export interface Tab {
   content: string
   originalContent: string
   dirty: boolean
+  saving: boolean
+  saveError: string | null
 }
+
+export type TemplateDialogState =
+  | { mode: 'create'; dirPath: string }
+  | { mode: 'replace'; path: string }
 
 interface AppState {
   workspaceRoot: string | null
@@ -20,9 +26,11 @@ interface AppState {
   theme: Settings['theme']
   resolvedTheme: 'light' | 'dark'
   editorMode: Settings['editorMode']
+  sidebarVisible: boolean
   recentWorkspaces: string[]
   quickOpenOpen: boolean
   helpOpen: boolean
+  templateDialog: TemplateDialogState | null
   pendingCloseTab: string | null
   bootstrapped: boolean
   cursorPosition: { line: number; col: number } | null
@@ -39,15 +47,17 @@ interface AppState {
   requestCloseTab: (path: string) => void
   confirmCloseTab: (path: string) => void
   cancelCloseTab: () => void
-  createFile: (dirPath: string, name: string) => Promise<string>
+  createFile: (dirPath: string, name: string, content?: string) => Promise<string>
   createUntitledFile: () => Promise<void>
   createFolder: (dirPath: string, name: string) => Promise<string>
   renamePath: (oldPath: string, newName: string, isDir: boolean) => Promise<void>
   deletePath: (path: string) => Promise<void>
   setTheme: (theme: Settings['theme']) => void
   setEditorMode: (mode: Settings['editorMode']) => void
+  toggleSidebar: () => void
   setQuickOpenOpen: (open: boolean) => void
   setHelpOpen: (open: boolean) => void
+  setTemplateDialog: (dialog: TemplateDialogState | null) => void
   handleWatchEvent: (event: WatchEvent) => void
 }
 
@@ -72,9 +82,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   theme: 'system',
   resolvedTheme: 'light',
   editorMode: 'split',
+  sidebarVisible: true,
   recentWorkspaces: [],
   quickOpenOpen: false,
   helpOpen: false,
+  templateDialog: null,
   pendingCloseTab: null,
   bootstrapped: false,
   cursorPosition: null,
@@ -88,6 +100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       theme: settings.theme,
       resolvedTheme: resolved,
       editorMode: settings.editorMode,
+      sidebarVisible: settings.sidebarVisible,
       recentWorkspaces: settings.recentWorkspaces,
       bootstrapped: true
     })
@@ -158,7 +171,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       return
     }
     const content = await window.api.fs.readFile(path)
-    const tab: Tab = { path, name: basename(path), content, originalContent: content, dirty: false }
+    const tab: Tab = { path, name: basename(path), content, originalContent: content, dirty: false, saving: false, saveError: null }
     set((state) => ({ tabs: [...state.tabs, tab], activeTabPath: path }))
   },
 
@@ -167,7 +180,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateTabContent: (path, content) => {
     set((state) => ({
       tabs: state.tabs.map((t) =>
-        t.path === path ? { ...t, content, dirty: content !== t.originalContent } : t
+        t.path === path ? { ...t, content, dirty: content !== t.originalContent, saveError: null } : t
       )
     }))
   },
@@ -175,10 +188,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   saveTab: async (path) => {
     const tab = get().tabs.find((t) => t.path === path)
     if (!tab) return
-    await window.api.fs.writeFile(path, tab.content)
+    const contentToSave = tab.content
+    set((state) => ({
+      tabs: state.tabs.map((item) => item.path === path ? { ...item, saving: true, saveError: null } : item)
+    }))
+    try {
+      await window.api.fs.writeFile(path, contentToSave)
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught)
+      set((state) => ({
+        tabs: state.tabs.map((item) => item.path === path ? { ...item, saving: false, saveError: message } : item)
+      }))
+      throw caught
+    }
     set((state) => ({
       tabs: state.tabs.map((t) =>
-        t.path === path ? { ...t, originalContent: t.content, dirty: false } : t
+        t.path === path
+          ? { ...t, originalContent: contentToSave, dirty: t.content !== contentToSave, saving: false, saveError: null }
+          : t
       )
     }))
   },
@@ -206,8 +233,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   cancelCloseTab: () => set({ pendingCloseTab: null }),
 
-  createFile: async (dirPath, name) => {
-    const path = await window.api.fs.createFile(dirPath, name)
+  createFile: async (dirPath, name, content = '') => {
+    const path = await window.api.fs.createFile(dirPath, name, content)
     await get().refreshDir(dirPath)
     await get().openFile(path)
     return path
@@ -216,17 +243,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   createUntitledFile: async () => {
     const root = get().workspaceRoot
     if (!root) return
-    let name = 'Untitled.md'
-    for (let n = 1; n <= 50; n++) {
-      try {
-        const path = await window.api.fs.createFile(root, name)
-        await get().refreshDir(root)
-        await get().openFile(path)
-        return
-      } catch {
-        name = `Untitled-${n}.md`
-      }
-    }
+    set({ templateDialog: { mode: 'create', dirPath: root } })
   },
 
   createFolder: async (dirPath, name) => {
@@ -237,16 +254,31 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   renamePath: async (oldPath, newName, isDir) => {
     const parent = dirname(oldPath)
-    const newPath = await window.api.fs.rename(oldPath, newName)
+    const preserveMarkdownExtension = !isDir && /\.(md|markdown|mdx)$/i.test(oldPath) && !/\.[^./\\]+$/.test(newName)
+    const finalName = preserveMarkdownExtension ? `${newName}.md` : newName
+    const hadLoadedChildren = Boolean(get().childrenByDir[oldPath])
+    const newPath = await window.api.fs.rename(oldPath, finalName)
     await get().refreshDir(parent)
-    if (isDir && get().childrenByDir[oldPath]) {
+    if (isDir && hadLoadedChildren) {
       await get().refreshDir(newPath)
     }
     set((state) => ({
-      tabs: state.tabs.map((t) =>
-        t.path === oldPath ? { ...t, path: newPath, name: basename(newPath) } : t
-      ),
-      activeTabPath: state.activeTabPath === oldPath ? newPath : state.activeTabPath
+      tabs: state.tabs.map((tab) => {
+        const affected = tab.path === oldPath || (isDir && (tab.path.startsWith(`${oldPath}\\`) || tab.path.startsWith(`${oldPath}/`)))
+        if (!affected) return tab
+        const path = `${newPath}${tab.path.slice(oldPath.length)}`
+        return { ...tab, path, name: basename(path) }
+      }),
+      activeTabPath:
+        state.activeTabPath && (state.activeTabPath === oldPath || (isDir && (state.activeTabPath.startsWith(`${oldPath}\\`) || state.activeTabPath.startsWith(`${oldPath}/`))))
+          ? `${newPath}${state.activeTabPath.slice(oldPath.length)}`
+          : state.activeTabPath,
+      childrenByDir: isDir
+        ? Object.fromEntries(Object.entries(state.childrenByDir).filter(([path]) => path !== oldPath && !path.startsWith(`${oldPath}\\`) && !path.startsWith(`${oldPath}/`)))
+        : state.childrenByDir,
+      expandedDirs: isDir
+        ? new Set([...state.expandedDirs].map((path) => path === oldPath || path.startsWith(`${oldPath}\\`) || path.startsWith(`${oldPath}/`) ? `${newPath}${path.slice(oldPath.length)}` : path))
+        : state.expandedDirs
     }))
   },
 
@@ -254,8 +286,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     const parent = dirname(path)
     await window.api.fs.delete(path)
     await get().refreshDir(parent)
-    const tab = get().tabs.find((t) => t.path === path)
-    if (tab) get().confirmCloseTab(path)
+    set((state) => {
+      const removed = (tabPath: string): boolean => tabPath === path || tabPath.startsWith(`${path}\\`) || tabPath.startsWith(`${path}/`)
+      const tabs = state.tabs.filter((tab) => !removed(tab.path))
+      const activeTabPath = state.activeTabPath && removed(state.activeTabPath)
+        ? tabs.at(-1)?.path ?? null
+        : state.activeTabPath
+      return { tabs, activeTabPath }
+    })
   },
 
   setTheme: (theme) => {
@@ -270,9 +308,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     window.api.settings.update({ editorMode: mode })
   },
 
+  toggleSidebar: () => {
+    const sidebarVisible = !get().sidebarVisible
+    set({ sidebarVisible })
+    window.api.settings.update({ sidebarVisible })
+  },
+
   setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),
 
   setHelpOpen: (open) => set({ helpOpen: open }),
+
+  setTemplateDialog: (templateDialog) => set({ templateDialog }),
 
   handleWatchEvent: (event) => {
     const state = get()
@@ -284,7 +330,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         window.api.fs.readFile(event.path).then((content) => {
           set((s) => ({
             tabs: s.tabs.map((t) =>
-              t.path === event.path ? { ...t, content, originalContent: content } : t
+              t.path === event.path ? { ...t, content, originalContent: content, saving: false, saveError: null } : t
             )
           }))
         })

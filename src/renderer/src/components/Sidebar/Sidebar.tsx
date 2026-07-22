@@ -20,6 +20,7 @@ export default function Sidebar(): React.JSX.Element {
   const recentWorkspaces = useAppStore((s) => s.recentWorkspaces)
   const openWorkspace = useAppStore((s) => s.openWorkspace)
   const deletePath = useAppStore((s) => s.deletePath)
+  const setTemplateDialog = useAppStore((s) => s.setTemplateDialog)
 
   const [creating, setCreating] = useState<CreatingState | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -38,7 +39,7 @@ export default function Sidebar(): React.JSX.Element {
       ? [
           {
             label: 'New File',
-            onSelect: () => setCreating({ dirPath: contextMenu.node.path, type: 'file' })
+            onSelect: () => setTemplateDialog({ mode: 'create', dirPath: contextMenu.node.path })
           },
           {
             label: 'New Folder',
@@ -84,7 +85,7 @@ export default function Sidebar(): React.JSX.Element {
             <IconButton
               label="New File"
               disabled={!workspaceRoot}
-              onClick={() => workspaceRoot && setCreating({ dirPath: workspaceRoot, type: 'file' })}
+              onClick={() => workspaceRoot && setTemplateDialog({ mode: 'create', dirPath: workspaceRoot })}
             >
               <FilePlus size={15} />
             </IconButton>
@@ -104,7 +105,7 @@ export default function Sidebar(): React.JSX.Element {
         <div className="min-h-0 flex-1 overflow-y-auto py-1">
           {workspaceRoot ? (
             <>
-              {creating && creating.dirPath === workspaceRoot && (
+              {creating?.type === 'folder' && creating.dirPath === workspaceRoot && (
                 <RootNewEntryRow dirPath={workspaceRoot} type={creating.type} onDone={() => setCreating(null)} />
               )}
               {rootChildren?.map((node) => (
@@ -185,10 +186,10 @@ function RootNewEntryRow({
     <div className="flex h-7 items-center gap-1 px-2 pl-3 text-sm">
       <InlineInput
         placeholder={type === 'file' ? 'name.md' : 'folder name'}
-        onSubmit={(value) => {
+        onSubmit={async (value) => {
+          if (type === 'file') await createFile(dirPath, value)
+          else await createFolder(dirPath, value)
           onDone()
-          if (type === 'file') createFile(dirPath, value)
-          else createFolder(dirPath, value)
         }}
         onCancel={onDone}
       />

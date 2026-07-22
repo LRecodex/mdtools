@@ -21,13 +21,37 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps): Reac
     if (nodes.length === 0) return
 
     if (mermaidInitializedTheme !== resolvedTheme) {
-      mermaid.initialize({ startOnLoad: false, theme: resolvedTheme === 'dark' ? 'dark' : 'default' })
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        suppressErrorRendering: true,
+        theme: resolvedTheme === 'dark' ? 'dark' : 'default'
+      })
       mermaidInitializedTheme = resolvedTheme
     }
 
-    mermaid.run({ nodes: Array.from(nodes) }).catch((err) => {
-      console.error('Failed to render Mermaid diagram', err)
-    })
+    let cancelled = false
+    const renderDiagrams = async (): Promise<void> => {
+      const validNodes: HTMLElement[] = []
+      for (const node of Array.from(nodes)) {
+        const valid = await mermaid.parse(node.textContent ?? '', { suppressErrors: true })
+        if (cancelled) return
+        if (valid) {
+          validNodes.push(node)
+        } else {
+          node.classList.add('mermaid-error')
+          node.setAttribute('title', 'This Mermaid diagram contains invalid syntax')
+        }
+      }
+      if (validNodes.length > 0 && !cancelled) {
+        await mermaid.run({ nodes: validNodes })
+      }
+    }
+
+    renderDiagrams().catch((err) => console.error('Failed to render Mermaid diagram', err))
+    return () => {
+      cancelled = true
+    }
   }, [html, resolvedTheme])
 
   return (
