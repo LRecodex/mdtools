@@ -6,12 +6,18 @@ import {
   Search,
   Save,
   Palette,
+  LayoutTemplate,
   X,
   FileText
 } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 
 const FEATURES: { icon: typeof FolderOpen; title: string; description: string }[] = [
+  {
+    icon: LayoutTemplate,
+    title: 'Document templates',
+    description: 'Create meeting notes, plans, development docs, study notes, and more from ready-to-edit templates.'
+  },
   {
     icon: FolderOpen,
     title: 'Workspace browsing',
@@ -66,13 +72,15 @@ graph TD
 \`\`\``
 
 const SHORTCUTS: { keys: string; action: string }[] = [
-  { keys: 'Ctrl+N', action: 'New file' },
+  { keys: 'Ctrl+N', action: 'New document from a template' },
   { keys: 'Ctrl+O', action: 'Open folder' },
   { keys: 'Ctrl+S', action: 'Save current file' },
   { keys: 'Ctrl+W', action: 'Close current tab' },
   { keys: 'Ctrl+P', action: 'Quick Open' },
   { keys: 'Ctrl+Tab', action: 'Next tab' },
   { keys: 'Ctrl+Shift+Tab', action: 'Previous tab' },
+  { keys: 'Ctrl+Shift+B', action: 'Show or hide sidebar' },
+  { keys: 'Ctrl+Shift+T', action: 'Apply a template to the current document' },
   { keys: 'Ctrl+,', action: 'Cycle theme' },
   { keys: 'Ctrl+/', action: 'Toggle this help' }
 ]
@@ -120,6 +128,13 @@ export default function HelpDialog(): React.JSX.Element | null {
             A fast, polished desktop app for browsing, viewing, and authoring Markdown files.
           </p>
 
+          <div className="mt-4 rounded-lg border border-(--color-accent)/30 bg-(--color-accent)/10 p-3 text-sm">
+            <p className="font-medium">Start faster with templates</p>
+            <p className="mt-1 text-(--color-text-muted)">
+              Press Ctrl+N to choose from built-in document templates. Use Ctrl+Shift+T to replace an open document; MD Tools always asks before overwriting existing content.
+            </p>
+          </div>
+
           <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-(--color-text-muted)">
             Features
           </h3>
@@ -141,9 +156,9 @@ export default function HelpDialog(): React.JSX.Element | null {
             Markdown syntax
           </h3>
           <p className="mt-2 text-sm text-(--color-text-muted)">
-            Headings, bold/italic, links, task lists, tables, and fenced code blocks are all
-            supported, with syntax highlighting for JS/TS, Python, Bash, JSON, HTML, CSS, YAML,
-            C++, Java, and SQL.
+            Use the formatting toolbar to add headings, bold/italic text, links, images, quotes,
+            lists, tasks, tables, code blocks, and diagrams. Standard Markdown also supports
+            strikethrough, autolinks, horizontal rules, and fenced code with syntax highlighting.
           </p>
           <pre className="mt-2 overflow-x-auto rounded-md border border-(--color-border) bg-(--color-bg-inset) p-3 text-xs">
             <code>{MARKDOWN_EXAMPLE}</code>

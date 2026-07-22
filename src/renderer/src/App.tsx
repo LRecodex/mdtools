@@ -7,6 +7,7 @@ import StatusBar from './components/StatusBar/StatusBar'
 import QuickOpen from './components/QuickOpen/QuickOpen'
 import UnsavedChangesDialog from './components/Dialogs/UnsavedChangesDialog'
 import HelpDialog from './components/Dialogs/HelpDialog'
+import TemplateDialog from './components/Dialogs/TemplateDialog'
 import EmptyState from './components/EmptyState/EmptyState'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
@@ -14,6 +15,7 @@ export default function App(): React.JSX.Element {
   const bootstrap = useAppStore((s) => s.bootstrap)
   const bootstrapped = useAppStore((s) => s.bootstrapped)
   const workspaceRoot = useAppStore((s) => s.workspaceRoot)
+  const sidebarVisible = useAppStore((s) => s.sidebarVisible)
 
   useEffect(() => {
     bootstrap()
@@ -33,7 +35,7 @@ export default function App(): React.JSX.Element {
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-(--color-bg) text-(--color-text)">
       <TitleBar />
       <div className="flex min-h-0 flex-1">
-        <Sidebar />
+        {sidebarVisible && <Sidebar />}
         {workspaceRoot ? (
           <div className="flex min-w-0 flex-1 flex-col">
             <EditorPane />
@@ -46,6 +48,7 @@ export default function App(): React.JSX.Element {
       <QuickOpen />
       <UnsavedChangesDialog />
       <HelpDialog />
+      <TemplateDialog />
     </div>
   )
 }

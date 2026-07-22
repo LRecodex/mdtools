@@ -11,6 +11,7 @@ export interface Settings {
   recentWorkspaces: string[]
   windowBounds: { width: number; height: number; x?: number; y?: number } | null
   editorMode: 'edit' | 'split' | 'preview'
+  sidebarVisible: boolean
 }
 
 export type WatchEventType = 'add' | 'addDir' | 'unlink' | 'unlinkDir' | 'change'
@@ -29,5 +30,6 @@ export const DEFAULT_SETTINGS: Settings = {
   lastWorkspace: null,
   recentWorkspaces: [],
   windowBounds: null,
-  editorMode: 'split'
+  editorMode: 'split',
+  sidebarVisible: true
 }

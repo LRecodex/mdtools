@@ -7,8 +7,8 @@ const api = {
     readFile: (path: string): Promise<string> => ipcRenderer.invoke('fs:readFile', path),
     writeFile: (path: string, content: string): Promise<void> =>
       ipcRenderer.invoke('fs:writeFile', path, content),
-    createFile: (dirPath: string, name: string): Promise<string> =>
-      ipcRenderer.invoke('fs:createFile', dirPath, name),
+    createFile: (dirPath: string, name: string, content = ''): Promise<string> =>
+      ipcRenderer.invoke('fs:createFile', dirPath, name, content),
     createFolder: (dirPath: string, name: string): Promise<string> =>
       ipcRenderer.invoke('fs:createFolder', dirPath, name),
     rename: (oldPath: string, newName: string): Promise<string> =>

@@ -1,6 +1,6 @@
 {
   "name": "mdtools",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A fast, polished desktop app for browsing, viewing, and authoring Markdown files.",
   "author": "Fauzul Azim",
   "main": "out/main/index.js",

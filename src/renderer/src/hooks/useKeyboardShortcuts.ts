@@ -10,6 +10,19 @@ export function useKeyboardShortcuts(): void {
       if (!mod) return
       const state = useAppStore.getState()
 
+      if (e.shiftKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        state.toggleSidebar()
+        return
+      }
+
+      if (e.shiftKey && e.key.toLowerCase() === 't') {
+        e.preventDefault()
+        if (state.activeTabPath) state.setTemplateDialog({ mode: 'replace', path: state.activeTabPath })
+        else if (state.workspaceRoot) state.setTemplateDialog({ mode: 'create', dirPath: state.workspaceRoot })
+        return
+      }
+
       switch (e.key.toLowerCase()) {
         case 'n':
           e.preventDefault()
@@ -24,7 +37,13 @@ export function useKeyboardShortcuts(): void {
           break
         case 's':
           e.preventDefault()
-          if (state.activeTabPath) await state.saveTab(state.activeTabPath)
+          if (state.activeTabPath) {
+            try {
+              await state.saveTab(state.activeTabPath)
+            } catch {
+              // The status bar shows the save failure.
+            }
+          }
           break
         case 'w':
           e.preventDefault()

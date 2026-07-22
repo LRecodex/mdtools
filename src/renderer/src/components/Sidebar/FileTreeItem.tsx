@@ -76,9 +76,9 @@ export default function FileTreeItem({ node, depth }: FileTreeItemProps): React.
           <InlineInput
             initialValue={node.name}
             selectBeforeExtension={!node.isDirectory}
-            onSubmit={(value) => {
+            onSubmit={async (value) => {
+              if (value !== node.name) await renamePath(node.path, value, node.isDirectory)
               setRenaming(null)
-              if (value !== node.name) renamePath(node.path, value, node.isDirectory)
             }}
             onCancel={() => setRenaming(null)}
           />
@@ -127,10 +127,10 @@ function NewEntryRow({
       )}
       <InlineInput
         placeholder={type === 'file' ? 'name.md' : 'folder name'}
-        onSubmit={(value) => {
+        onSubmit={async (value) => {
+          if (type === 'file') await createFile(dirPath, value)
+          else await createFolder(dirPath, value)
           setCreating(null)
-          if (type === 'file') createFile(dirPath, value)
-          else createFolder(dirPath, value)
         }}
         onCancel={() => setCreating(null)}
       />

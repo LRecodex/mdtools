@@ -13,7 +13,7 @@ export default function ModeSwitcher(): React.JSX.Element {
   const setEditorMode = useAppStore((s) => s.setEditorMode)
 
   return (
-    <div className="flex items-center gap-0.5 rounded-md bg-(--color-bg-inset) p-0.5">
+    <div className="flex shrink-0 items-center gap-0.5 rounded-md bg-(--color-bg-inset) p-0.5">
       {MODES.map(({ key, label, icon: Icon }) => (
         <button
           key={key}
