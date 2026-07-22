@@ -40,7 +40,10 @@ function createWindow(): void {
   mainWindow.on('moved', () => persistBounds(mainWindow))
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    const protocol = new URL(details.url).protocol
+    if (protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:') {
+      void shell.openExternal(details.url)
+    }
     return { action: 'deny' }
   })
 

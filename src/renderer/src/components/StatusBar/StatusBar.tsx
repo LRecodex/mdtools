@@ -40,11 +40,11 @@ export default function StatusBar(): React.JSX.Element {
         ) : activeTab?.dirty ? (
           <span className="shrink-0">Unsaved</span>
         ) : activeTab ? (
-          <span className="shrink-0">Saved</span>
+          <span className="shrink-0">{activeTab.editable ? 'Saved' : 'Read only'}</span>
         ) : null}
       </div>
       <div className="flex items-center gap-3">
-        {activeTab && (
+        {activeTab?.editable && (
           <>
             <span>{countWords(activeTab.content)} words</span>
             <span>{readingTime(activeTab.content)}</span>

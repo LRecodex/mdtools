@@ -1,10 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { FileNode, Settings, WatchEvent } from '../shared/types'
+import type { FileNode, OpenedDocument, Settings, WatchEvent } from '../shared/types'
 
 const api = {
   fs: {
     readDir: (path: string): Promise<FileNode[]> => ipcRenderer.invoke('fs:readDir', path),
-    readFile: (path: string): Promise<string> => ipcRenderer.invoke('fs:readFile', path),
+    openDocument: (path: string): Promise<OpenedDocument> => ipcRenderer.invoke('fs:openDocument', path),
     writeFile: (path: string, content: string): Promise<void> =>
       ipcRenderer.invoke('fs:writeFile', path, content),
     createFile: (dirPath: string, name: string, content = ''): Promise<string> =>
@@ -22,7 +22,9 @@ const api = {
     openFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:openFolder'),
     showItemInFolder: (path: string): Promise<void> =>
       ipcRenderer.invoke('dialog:showItemInFolder', path),
-    openExternal: (url: string): Promise<void> => ipcRenderer.invoke('dialog:openExternal', url)
+    openExternal: (url: string): Promise<void> => ipcRenderer.invoke('dialog:openExternal', url),
+    exportMarkdownPdf: (html: string, title: string, suggestedName: string, theme: 'light' | 'dark'): Promise<string | null> =>
+      ipcRenderer.invoke('dialog:exportMarkdownPdf', html, title, suggestedName, theme)
   },
   win: {
     minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),

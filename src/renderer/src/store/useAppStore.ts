@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { FileNode, Settings, WatchEvent } from '../../../shared/types'
+import { documentKind, isEditableKind, type DocumentKind, type FileNode, type Settings, type SpreadsheetData, type WatchEvent } from '../../../shared/types'
 import { dirname, basename } from '../lib/path'
 
 export interface Tab {
@@ -10,6 +10,11 @@ export interface Tab {
   dirty: boolean
   saving: boolean
   saveError: string | null
+  kind: DocumentKind
+  editable: boolean
+  dataUrl?: string
+  html?: string
+  sheets?: SpreadsheetData[]
 }
 
 export type TemplateDialogState =
@@ -170,8 +175,21 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ activeTabPath: path })
       return
     }
-    const content = await window.api.fs.readFile(path)
-    const tab: Tab = { path, name: basename(path), content, originalContent: content, dirty: false, saving: false, saveError: null }
+    const document = await window.api.fs.openDocument(path)
+    const tab: Tab = {
+      path,
+      name: basename(path),
+      content: document.content,
+      originalContent: document.content,
+      dirty: false,
+      saving: false,
+      saveError: null,
+      kind: document.kind,
+      editable: document.editable,
+      dataUrl: document.dataUrl,
+      html: document.html,
+      sheets: document.sheets
+    }
     set((state) => ({ tabs: [...state.tabs, tab], activeTabPath: path }))
   },
 
@@ -180,14 +198,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateTabContent: (path, content) => {
     set((state) => ({
       tabs: state.tabs.map((t) =>
-        t.path === path ? { ...t, content, dirty: content !== t.originalContent, saveError: null } : t
+        t.path === path && t.editable ? { ...t, content, dirty: content !== t.originalContent, saveError: null } : t
       )
     }))
   },
 
   saveTab: async (path) => {
     const tab = get().tabs.find((t) => t.path === path)
-    if (!tab) return
+    if (!tab || !tab.editable) return
     const contentToSave = tab.content
     set((state) => ({
       tabs: state.tabs.map((item) => item.path === path ? { ...item, saving: true, saveError: null } : item)
@@ -254,8 +272,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   renamePath: async (oldPath, newName, isDir) => {
     const parent = dirname(oldPath)
-    const preserveMarkdownExtension = !isDir && /\.(md|markdown|mdx)$/i.test(oldPath) && !/\.[^./\\]+$/.test(newName)
-    const finalName = preserveMarkdownExtension ? `${newName}.md` : newName
+    const oldKind = documentKind(oldPath)
+    const preserveExtension = !isDir && isEditableKind(oldKind) && !/\.[^./\\]+$/.test(newName)
+    const oldExtension = /\.([^./\\]+)$/.exec(oldPath)?.[1] ?? 'md'
+    const finalName = preserveExtension ? `${newName}.${oldExtension}` : newName
     const hadLoadedChildren = Boolean(get().childrenByDir[oldPath])
     const newPath = await window.api.fs.rename(oldPath, finalName)
     await get().refreshDir(parent)
@@ -267,7 +287,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         const affected = tab.path === oldPath || (isDir && (tab.path.startsWith(`${oldPath}\\`) || tab.path.startsWith(`${oldPath}/`)))
         if (!affected) return tab
         const path = `${newPath}${tab.path.slice(oldPath.length)}`
-        return { ...tab, path, name: basename(path) }
+        const kind = documentKind(path)
+        return { ...tab, path, name: basename(path), kind, editable: isEditableKind(kind) }
       }),
       activeTabPath:
         state.activeTabPath && (state.activeTabPath === oldPath || (isDir && (state.activeTabPath.startsWith(`${oldPath}\\`) || state.activeTabPath.startsWith(`${oldPath}/`))))
@@ -327,10 +348,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (event.type === 'change') {
       const tab = state.tabs.find((t) => t.path === event.path)
       if (tab && !tab.dirty) {
-        window.api.fs.readFile(event.path).then((content) => {
+        window.api.fs.openDocument(event.path).then((document) => {
           set((s) => ({
             tabs: s.tabs.map((t) =>
-              t.path === event.path ? { ...t, content, originalContent: content, saving: false, saveError: null } : t
+              t.path === event.path ? {
+                ...t,
+                content: document.content,
+                originalContent: document.content,
+                kind: document.kind,
+                editable: document.editable,
+                dataUrl: document.dataUrl,
+                html: document.html,
+                sheets: document.sheets,
+                saving: false,
+                saveError: null
+              } : t
             )
           }))
         })

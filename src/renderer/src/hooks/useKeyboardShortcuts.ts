@@ -18,7 +18,8 @@ export function useKeyboardShortcuts(): void {
 
       if (e.shiftKey && e.key.toLowerCase() === 't') {
         e.preventDefault()
-        if (state.activeTabPath) state.setTemplateDialog({ mode: 'replace', path: state.activeTabPath })
+        const activeTab = state.tabs.find((tab) => tab.path === state.activeTabPath)
+        if (activeTab?.kind === 'markdown') state.setTemplateDialog({ mode: 'replace', path: activeTab.path })
         else if (state.workspaceRoot) state.setTemplateDialog({ mode: 'create', dirPath: state.workspaceRoot })
         return
       }

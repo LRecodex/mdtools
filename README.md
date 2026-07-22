@@ -65,7 +65,8 @@ src/
 Standard Markdown renders via `markdown-it`: headings, bold/italic, links, blockquotes, task lists
 (`- [ ]` / `- [x]`), tables, and fenced code blocks — with syntax highlighting for **JS/TS, Python,
 Bash, JSON, HTML, CSS, YAML, C++, Java, and SQL** (registered languages live in
-`src/renderer/src/lib/markdown.ts`).
+`src/renderer/src/lib/markdown.ts`). Common inline HTML is supported and sanitized before display;
+scripts, event handlers, embedded pages, forms, and inline styles are removed.
 
 Fence a code block with `mermaid` and it renders live in Preview/Split mode — flowcharts, sequence
 diagrams, Gantt charts, state diagrams, and more:
