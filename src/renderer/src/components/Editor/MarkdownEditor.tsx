@@ -1,8 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
-import { EditorSelection } from '@codemirror/state'
+import { EditorSelection, StateEffect } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
+import { json } from '@codemirror/lang-json'
+import { bracketMatching, foldGutter, indentOnInput, LanguageDescription } from '@codemirror/language'
+import { languages } from '@codemirror/language-data'
+import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
 import { GFM } from '@lezer/markdown'
 import { editorTheme, markdownHighlighting } from '../../lib/cmTheme'
 import type { MarkdownEditorHandle, MarkdownFormat } from './formatting'
@@ -79,6 +83,7 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void
   onSaveShortcut?: () => void
   onCursorChange?: (pos: { line: number; col: number }) => void
+  documentType?: 'markdown' | 'text' | 'json' | 'code'
 }
 
 function applyMarkdownFormat(view: EditorView, format: MarkdownFormat): void {
@@ -171,7 +176,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
   value,
   onChange,
   onSaveShortcut,
-  onCursorChange
+  onCursorChange,
+  documentType = 'markdown'
 }, ref): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -197,7 +203,14 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
         highlightActiveLine(),
         highlightActiveLineGutter(),
         history(),
-        markdown({ extensions: [GFM] }),
+        ...(documentType === 'markdown'
+          ? [markdown({ extensions: [GFM] })]
+          : documentType === 'json'
+            ? [json()]
+            : []),
+        ...(documentType === 'code'
+          ? [foldGutter(), indentOnInput(), bracketMatching(), closeBrackets(), autocompletion()]
+          : []),
         markdownHighlighting,
         editorTheme,
         EditorView.lineWrapping,
@@ -205,6 +218,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
           {
             key: 'Mod-b',
             run: (v) => {
+              if (documentType !== 'markdown') return false
               applyMarkdownFormat(v, 'bold')
               return true
             }
@@ -212,6 +226,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
           {
             key: 'Mod-i',
             run: (v) => {
+              if (documentType !== 'markdown') return false
               applyMarkdownFormat(v, 'italic')
               return true
             }
@@ -224,6 +239,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
             }
           },
           indentWithTab,
+          ...(documentType === 'code' ? [...closeBracketsKeymap, ...completionKeymap] : []),
           ...historyKeymap,
           ...defaultKeymap
         ]),
@@ -244,6 +260,14 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
     })
 
     viewRef.current = view
+    if (documentType === 'code') {
+      const language = LanguageDescription.matchFilename(languages, path)
+      language?.load().then((support) => {
+        if (viewRef.current === view) view.dispatch({ effects: StateEffect.appendConfig.of(support) })
+      }).catch(() => {
+        // Unknown or unavailable modes remain fully editable as plain text.
+      })
+    }
     return () => {
       view.destroy()
       viewRef.current = null

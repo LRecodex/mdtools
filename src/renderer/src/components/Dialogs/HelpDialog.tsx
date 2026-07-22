@@ -158,7 +158,8 @@ export default function HelpDialog(): React.JSX.Element | null {
           <p className="mt-2 text-sm text-(--color-text-muted)">
             Use the formatting toolbar to add headings, bold/italic text, links, images, quotes,
             lists, tasks, tables, code blocks, and diagrams. Standard Markdown also supports
-            strikethrough, autolinks, horizontal rules, and fenced code with syntax highlighting.
+            strikethrough, autolinks, horizontal rules, fenced code with syntax highlighting, and
+            sanitized HTML such as details, summary, kbd, sub, and sup elements.
           </p>
           <pre className="mt-2 overflow-x-auto rounded-md border border-(--color-border) bg-(--color-bg-inset) p-3 text-xs">
             <code>{MARKDOWN_EXAMPLE}</code>

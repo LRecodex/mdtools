@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FilePlus2, FileText, LayoutTemplate, Search } from 'lucide-react'
+import { Download, FilePlus2, FileText, LayoutTemplate, Search } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import EditorTabs from './EditorTabs'
 import ModeSwitcher from './ModeSwitcher'
 import MarkdownEditor from './MarkdownEditor'
-import MarkdownPreview from './MarkdownPreview'
+import MarkdownPreview, { renderMarkdownForExport } from './MarkdownPreview'
 import FormattingToolbar from './FormattingToolbar'
 import type { MarkdownEditorHandle } from './formatting'
+import DocumentViewer from './DocumentViewer'
 
 const AUTOSAVE_DELAY_MS = 800
 const MIN_SPLIT_RATIO = 0.15
@@ -22,6 +23,7 @@ export default function EditorPane(): React.JSX.Element {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot)
   const setQuickOpenOpen = useAppStore((s) => s.setQuickOpenOpen)
   const setTemplateDialog = useAppStore((s) => s.setTemplateDialog)
+  const resolvedTheme = useAppStore((s) => s.resolvedTheme)
 
   const activeTab = tabs.find((t) => t.path === activeTabPath)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -29,6 +31,23 @@ export default function EditorPane(): React.JSX.Element {
   const editorRef = useRef<MarkdownEditorHandle>(null)
   const [splitRatio, setSplitRatio] = useState(0.5)
   const [isDragging, setIsDragging] = useState(false)
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+
+  const handleExportPdf = async (): Promise<void> => {
+    if (!activeTab || activeTab.kind !== 'markdown' || isExportingPdf) return
+    setIsExportingPdf(true)
+    setExportError(null)
+    try {
+      const html = await renderMarkdownForExport(activeTab.content, resolvedTheme)
+      const title = activeTab.name.replace(/\.(md|markdown|mdx)$/i, '')
+      await window.api.dialog.exportMarkdownPdf(html, title, activeTab.name, resolvedTheme)
+    } catch (caught) {
+      setExportError(caught instanceof Error ? caught.message : String(caught))
+    } finally {
+      setIsExportingPdf(false)
+    }
+  }
 
   const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -62,7 +81,7 @@ export default function EditorPane(): React.JSX.Element {
   }, [isDragging])
 
   useEffect(() => {
-    if (!activeTab?.dirty) return
+    if (!activeTab?.dirty || !activeTab.editable) return
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       saveTab(activeTab.path).catch(() => {
@@ -82,6 +101,38 @@ export default function EditorPane(): React.JSX.Element {
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorTabs />
       {activeTab ? (
+        activeTab.kind !== 'markdown' ? (
+          <>
+            <div className="flex h-10 shrink-0 items-center justify-between border-b border-(--color-border) px-3">
+              <span className="text-xs font-medium text-(--color-text-muted)">
+                {activeTab.editable
+                  ? activeTab.kind === 'json'
+                    ? 'JSON editor'
+                    : activeTab.kind === 'code'
+                      ? 'Code editor'
+                      : 'Text editor'
+                  : 'Read-only preview'}
+              </span>
+              <span className="rounded-full bg-(--color-bg-inset) px-2 py-0.5 text-[11px] uppercase tracking-wide text-(--color-text-muted)">
+                {activeTab.kind}
+              </span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              {activeTab.editable ? (
+                <MarkdownEditor
+                  path={activeTab.path}
+                  value={activeTab.content}
+                  documentType={activeTab.kind === 'json' ? 'json' : activeTab.kind === 'code' ? 'code' : 'text'}
+                  onChange={(content) => updateTabContent(activeTab.path, content)}
+                  onSaveShortcut={() => saveTab(activeTab.path)}
+                  onCursorChange={setCursorPosition}
+                />
+              ) : (
+                <DocumentViewer tab={activeTab} />
+              )}
+            </div>
+          </>
+        ) : (
         <>
           <div className="flex h-10 shrink-0 items-center justify-between border-b border-(--color-border) px-2">
             {editorMode !== 'preview' ? (
@@ -90,6 +141,17 @@ export default function EditorPane(): React.JSX.Element {
               <span className="min-w-0 flex-1 px-1 text-xs text-(--color-text-muted)">Preview</span>
             )}
             <div className="ml-2 flex shrink-0 items-center gap-1 border-l border-(--color-border) pl-2">
+              {exportError && <span className="max-w-36 truncate text-xs text-red-500" title={exportError}>Export failed</span>}
+              <button
+                type="button"
+                disabled={isExportingPdf}
+                title="Export rendered preview as PDF"
+                onClick={handleExportPdf}
+                className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text) disabled:opacity-50"
+              >
+                <Download size={14} />
+                {isExportingPdf ? 'Exporting…' : 'PDF'}
+              </button>
               <button
                 type="button"
                 title="Replace content from a template (Ctrl+Shift+T)"
@@ -139,6 +201,7 @@ export default function EditorPane(): React.JSX.Element {
             )}
           </div>
         </>
+        )
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center px-6 text-center text-(--color-text-muted)">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-(--color-bg-elevated)">

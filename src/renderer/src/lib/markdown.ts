@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it'
+import DOMPurify from 'dompurify'
 // @ts-expect-error no type declarations shipped for this plugin
 import taskLists from 'markdown-it-task-lists'
 import hljs from 'highlight.js/lib/core'
@@ -30,7 +31,7 @@ hljs.registerLanguage('java', java)
 hljs.registerLanguage('sql', sqlLang)
 
 const md: MarkdownIt = new MarkdownIt({
-  html: false,
+  html: true,
   linkify: true,
   typographer: true,
   breaks: false,
@@ -71,6 +72,17 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
   return defaultLinkRender(tokens, idx, options, env, self)
 }
 
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node instanceof HTMLAnchorElement) {
+    node.setAttribute('target', '_blank')
+    node.setAttribute('rel', 'noopener noreferrer')
+  }
+})
+
 export function renderMarkdown(source: string): string {
-  return md.render(source)
+  return DOMPurify.sanitize(md.render(source), {
+    USE_PROFILES: { html: true },
+    FORBID_ATTR: ['style'],
+    FORBID_TAGS: ['form', 'button', 'textarea', 'select', 'option', 'iframe', 'object', 'embed']
+  })
 }

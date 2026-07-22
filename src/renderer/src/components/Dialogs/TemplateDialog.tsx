@@ -21,6 +21,10 @@ function fileNameError(value: string): string | null {
   if (!trimmed) return 'Enter a file name.'
   if (trimmed === '.' || trimmed === '..') return 'Choose a different file name.'
   if (/[\\/:*?"<>|]/.test(trimmed)) return 'File names cannot contain \\ / : * ? " < > or |.'
+  const extension = /\.([^./\\]+)$/.exec(trimmed)?.[1]?.toLowerCase()
+  if (extension && !['md', 'markdown', 'mdx', 'txt', 'json'].includes(extension)) {
+    return 'New files can only be Markdown, TXT, or JSON.'
+  }
   return null
 }
 
@@ -34,6 +38,7 @@ export default function TemplateDialog(): React.JSX.Element | null {
   const [selectedId, setSelectedId] = useState('blank')
   const [query, setQuery] = useState('')
   const [fileName, setFileName] = useState('Untitled.md')
+  const [fileType, setFileType] = useState<'md' | 'txt' | 'json'>('md')
   const [title, setTitle] = useState('Untitled')
   const [fileNameTouched, setFileNameTouched] = useState(false)
   const [titleTouched, setTitleTouched] = useState(false)
@@ -51,6 +56,7 @@ export default function TemplateDialog(): React.JSX.Element | null {
     setSelectedId('blank')
     setQuery('')
     setFileName(initialName)
+    setFileType(/\.json$/i.test(initialName) ? 'json' : /\.txt$/i.test(initialName) ? 'txt' : 'md')
     setTitle(titleFromFileName(initialName))
     setFileNameTouched(false)
     setTitleTouched(false)
@@ -81,6 +87,10 @@ export default function TemplateDialog(): React.JSX.Element | null {
 
   const selectTemplate = (template: DocumentTemplate): void => {
     setSelectedId(template.id)
+    if (template.id !== 'blank' && dialog.mode === 'create') {
+      setFileType('md')
+      if (fileNameTouched) setFileName((current) => current.replace(/\.[^./\\]+$/, '.md'))
+    }
     setError(null)
     if (dialog.mode === 'create' && !fileNameTouched) {
       setFileName(template.suggestedName)
@@ -88,7 +98,12 @@ export default function TemplateDialog(): React.JSX.Element | null {
     }
   }
 
-  const content = selected.createContent(title.trim() || titleFromFileName(fileName))
+  const selectedExtension = /\.(txt|json)$/i.exec(fileName)?.[1]?.toLowerCase()
+  const content = dialog.mode === 'create' && selectedExtension === 'txt'
+    ? ''
+    : dialog.mode === 'create' && selectedExtension === 'json'
+      ? '{}\n'
+      : selected.createContent(title.trim() || titleFromFileName(fileName))
 
   const applyReplacement = (): void => {
     if (dialog.mode !== 'replace') return
@@ -208,20 +223,44 @@ export default function TemplateDialog(): React.JSX.Element | null {
             <p className="mt-1 text-xs leading-5 text-(--color-text-muted)">{selected.description}</p>
 
             {dialog.mode === 'create' && (
-              <label className="mt-5 text-xs font-medium">
-                File name
-                <input
-                  value={fileName}
-                  onChange={(event) => {
-                    const value = event.target.value
-                    setFileName(value)
-                    setFileNameTouched(true)
-                    setError(null)
-                    if (!titleTouched) setTitle(titleFromFileName(value))
-                  }}
-                  className="mt-1.5 h-9 w-full rounded-md border border-(--color-border) bg-(--color-bg-elevated) px-2.5 text-sm outline-none focus:border-(--color-accent)"
-                />
-              </label>
+              <div className="mt-5">
+                <span className="text-xs font-medium">File type</span>
+                <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-md bg-(--color-bg-inset) p-1">
+                  {(['md', 'txt', 'json'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        setFileType(type)
+                        setSelectedId('blank')
+                        setFileName((current) => /\.[^./\\]+$/.test(current) ? current.replace(/\.[^./\\]+$/, `.${type}`) : `${current}.${type}`)
+                        setFileNameTouched(true)
+                        setError(null)
+                      }}
+                      className={`rounded px-2 py-1 text-xs uppercase ${fileType === type ? 'bg-(--color-accent) text-(--color-accent-fg)' : 'text-(--color-text-muted)'}`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                <label className="mt-4 block text-xs font-medium">
+                  File name
+                  <input
+                    value={fileName}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setFileName(value)
+                      setFileNameTouched(true)
+                      setError(null)
+                      if (/\.json$/i.test(value)) setFileType('json')
+                      else if (/\.txt$/i.test(value)) setFileType('txt')
+                      else if (/\.(md|markdown|mdx)$/i.test(value)) setFileType('md')
+                      if (!titleTouched) setTitle(titleFromFileName(value))
+                    }}
+                    className="mt-1.5 h-9 w-full rounded-md border border-(--color-border) bg-(--color-bg-elevated) px-2.5 text-sm outline-none focus:border-(--color-accent)"
+                  />
+                </label>
+              </div>
             )}
 
             {selected.id !== 'blank' && (
