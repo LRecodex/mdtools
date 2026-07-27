@@ -14,7 +14,7 @@ export default function EmptyState(): React.JSX.Element {
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-(--color-bg-elevated)">
         <FileText size={30} className="text-(--color-accent)" />
       </div>
-      <p className="text-sm">Open a folder to browse and edit Markdown files</p>
+      <p className="text-sm">Open a folder, or drop a Markdown file here to edit and preview it</p>
       <button
         type="button"
         onClick={handleOpenFolder}

@@ -1,8 +1,9 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { FileNode, OpenedDocument, Settings, WatchEvent } from '../shared/types'
 
 const api = {
   fs: {
+    getPathForFile: (file: File): string => webUtils.getPathForFile(file),
     readDir: (path: string): Promise<FileNode[]> => ipcRenderer.invoke('fs:readDir', path),
     openDocument: (path: string): Promise<OpenedDocument> => ipcRenderer.invoke('fs:openDocument', path),
     writeFile: (path: string, content: string): Promise<void> =>
