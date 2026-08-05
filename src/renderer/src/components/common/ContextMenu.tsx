@@ -5,6 +5,7 @@ export interface ContextMenuItem {
   onSelect: () => void
   danger?: boolean
   separatorBefore?: boolean
+  disabled?: boolean
 }
 
 interface ContextMenuProps {
@@ -46,10 +47,12 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps):
           {item.separatorBefore && <div className="my-1 h-px bg-(--color-border)" />}
           <button
             type="button"
-            className={`block w-full rounded-md px-3 py-1.5 text-left text-sm hover:bg-(--color-accent) hover:text-(--color-accent-fg) ${
+            disabled={item.disabled}
+            className={`block w-full rounded-md px-3 py-1.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent disabled:hover:text-inherit hover:bg-(--color-accent) hover:text-(--color-accent-fg) ${
               item.danger ? 'text-red-500 hover:bg-red-600 hover:text-white' : ''
             }`}
             onClick={() => {
+              if (item.disabled) return
               item.onSelect()
               onClose()
             }}

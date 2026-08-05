@@ -1,6 +1,6 @@
 import { ipcMain, shell } from 'electron'
 import { promises as fs } from 'fs'
-import { join, extname, dirname } from 'path'
+import { join, extname, dirname, basename, parse, relative, resolve, sep } from 'path'
 import mammoth from 'mammoth'
 import ExcelJS from 'exceljs'
 import { documentKind, isCreatableKind, isEditableKind, type FileNode, type OpenedDocument, type SpreadsheetData } from '../../shared/types'
@@ -147,6 +147,54 @@ async function searchFiles(root: string, query: string): Promise<FileNode[]> {
   return results
 }
 
+async function availableCopyPath(sourcePath: string, destinationDir: string): Promise<string> {
+  const sourceName = basename(sourcePath)
+  const parsed = parse(sourceName)
+  const sourceIsDirectory = (await fs.stat(sourcePath)).isDirectory()
+  const originalTarget = join(destinationDir, sourceName)
+
+  try {
+    await fs.access(originalTarget)
+  } catch {
+    return originalTarget
+  }
+
+  let copyNumber = 1
+
+  while (true) {
+    const suffix = copyNumber === 1 ? ' - Copy' : ` - Copy (${copyNumber})`
+    const name = sourceIsDirectory
+      ? `${sourceName}${suffix}`
+      : `${parsed.name}${suffix}${parsed.ext}`
+    const candidate = join(destinationDir, name)
+    try {
+      await fs.access(candidate)
+      copyNumber += 1
+    } catch {
+      return candidate
+    }
+  }
+}
+
+async function copyEntry(sourcePath: string, destinationDir: string): Promise<string> {
+  const source = resolve(sourcePath)
+  const destination = resolve(destinationDir)
+  const sourceStats = await fs.stat(source)
+  const destinationStats = await fs.stat(destination)
+  if (!destinationStats.isDirectory()) throw new Error('Paste destination must be a folder')
+
+  if (sourceStats.isDirectory()) {
+    const destinationRelativeToSource = relative(source, destination)
+    if (!destinationRelativeToSource || (!destinationRelativeToSource.startsWith(`..${sep}`) && destinationRelativeToSource !== '..')) {
+      throw new Error('A folder cannot be pasted inside itself')
+    }
+  }
+
+  const target = await availableCopyPath(source, destination)
+  await fs.cp(source, target, { recursive: sourceStats.isDirectory(), errorOnExist: true })
+  return target
+}
+
 export function registerFileSystemHandlers(): void {
   ipcMain.handle('fs:readDir', async (_event, path: string) => readDir(path))
 
@@ -184,6 +232,10 @@ export function registerFileSystemHandlers(): void {
   ipcMain.handle('fs:delete', async (_event, path: string) => {
     await shell.trashItem(path)
   })
+
+  ipcMain.handle('fs:copy', async (_event, sourcePath: string, destinationDir: string) =>
+    copyEntry(sourcePath, destinationDir)
+  )
 
   ipcMain.handle('fs:exists', async (_event, path: string) => {
     try {

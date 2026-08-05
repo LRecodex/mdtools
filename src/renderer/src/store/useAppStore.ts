@@ -40,6 +40,8 @@ interface AppState {
   pendingCloseTab: string | null
   bootstrapped: boolean
   cursorPosition: { line: number; col: number } | null
+  copiedPath: string | null
+  copiedPathIsDirectory: boolean
   setCursorPosition: (pos: { line: number; col: number } | null) => void
 
   bootstrap: () => Promise<void>
@@ -61,6 +63,8 @@ interface AppState {
   createFolder: (dirPath: string, name: string) => Promise<string>
   renamePath: (oldPath: string, newName: string, isDir: boolean) => Promise<void>
   deletePath: (path: string) => Promise<void>
+  copyPath: (path: string, isDirectory: boolean) => void
+  pastePath: (destinationDir: string) => Promise<string | null>
   setTheme: (theme: Settings['theme']) => void
   setEditorMode: (mode: Settings['editorMode']) => void
   toggleSidebar: () => void
@@ -100,6 +104,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   pendingCloseTab: null,
   bootstrapped: false,
   cursorPosition: null,
+  copiedPath: null,
+  copiedPathIsDirectory: false,
   setCursorPosition: (pos) => set({ cursorPosition: pos }),
 
   bootstrap: async () => {
@@ -349,6 +355,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         : state.selectedFolderPath
       return { tabs, activeTabPath, selectedFolderPath }
     })
+  },
+
+  copyPath: (path, isDirectory) => set({ copiedPath: path, copiedPathIsDirectory: isDirectory }),
+
+  pastePath: async (destinationDir) => {
+    const sourcePath = get().copiedPath
+    if (!sourcePath) return null
+    const target = await window.api.fs.copy(sourcePath, destinationDir)
+    await get().refreshDir(destinationDir)
+    if (get().copiedPathIsDirectory) {
+      const expanded = new Set(get().expandedDirs)
+      expanded.add(destinationDir)
+      set({ expandedDirs: expanded })
+    }
+    return target
   },
 
   setTheme: (theme) => {

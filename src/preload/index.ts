@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { clipboard, contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { FileNode, OpenedDocument, Settings, WatchEvent } from '../shared/types'
 
 const api = {
@@ -15,9 +15,14 @@ const api = {
     rename: (oldPath: string, newName: string): Promise<string> =>
       ipcRenderer.invoke('fs:rename', oldPath, newName),
     delete: (path: string): Promise<void> => ipcRenderer.invoke('fs:delete', path),
+    copy: (sourcePath: string, destinationDir: string): Promise<string> =>
+      ipcRenderer.invoke('fs:copy', sourcePath, destinationDir),
     exists: (path: string): Promise<boolean> => ipcRenderer.invoke('fs:exists', path),
     searchFiles: (root: string, query: string): Promise<FileNode[]> =>
       ipcRenderer.invoke('fs:searchFiles', root, query)
+  },
+  clipboard: {
+    writeText: (text: string): void => clipboard.writeText(text)
   },
   dialog: {
     openFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:openFolder'),

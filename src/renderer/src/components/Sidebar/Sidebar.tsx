@@ -25,6 +25,9 @@ export default function Sidebar(): React.JSX.Element {
   const selectFolder = useAppStore((s) => s.selectFolder)
   const revealFolder = useAppStore((s) => s.revealFolder)
   const collapseAllFolders = useAppStore((s) => s.collapseAllFolders)
+  const copiedPath = useAppStore((s) => s.copiedPath)
+  const copyPath = useAppStore((s) => s.copyPath)
+  const pastePath = useAppStore((s) => s.pastePath)
 
   const [creating, setCreating] = useState<CreatingState | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -38,6 +41,7 @@ export default function Sidebar(): React.JSX.Element {
 
   const rootChildren = workspaceRoot ? childrenByDir[workspaceRoot] : undefined
   const createTarget = selectedFolderPath ?? workspaceRoot
+  const isWorkspaceRootMenu = Boolean(contextMenu && contextMenu.node.path === workspaceRoot)
   const beginCreatingFolder = (dirPath: string): void => {
     revealFolder(dirPath)
     setCreating({ dirPath, type: 'folder' })
@@ -54,19 +58,45 @@ export default function Sidebar(): React.JSX.Element {
             label: 'New Folder',
             onSelect: () => beginCreatingFolder(contextMenu.node.path)
           },
-          { label: 'Rename', onSelect: () => setRenaming(contextMenu.node.path), separatorBefore: true },
+          {
+            label: 'Paste',
+            disabled: !copiedPath,
+            onSelect: () => void pastePath(contextMenu.node.path),
+            separatorBefore: true
+          },
+          {
+            label: 'Copy Folder',
+            onSelect: () => copyPath(contextMenu.node.path, true)
+          },
+          {
+            label: 'Copy Folder Path',
+            onSelect: () => window.api.clipboard.writeText(contextMenu.node.path)
+          },
+          ...(!isWorkspaceRootMenu
+            ? [{ label: 'Rename', onSelect: () => setRenaming(contextMenu.node.path), separatorBefore: true }]
+            : []),
           {
             label: 'Reveal in Explorer',
             onSelect: () => window.api.dialog.showItemInFolder(contextMenu.node.path)
           },
-          {
-            label: 'Delete',
-            danger: true,
-            separatorBefore: true,
-            onSelect: () => setConfirmDelete(contextMenu.node)
-          }
+          ...(!isWorkspaceRootMenu
+            ? [{
+                label: 'Delete',
+                danger: true,
+                separatorBefore: true,
+                onSelect: () => setConfirmDelete(contextMenu.node)
+              }]
+            : [])
         ]
       : [
+          {
+            label: 'Copy File',
+            onSelect: () => copyPath(contextMenu.node.path, false)
+          },
+          {
+            label: 'Copy File Path',
+            onSelect: () => window.api.clipboard.writeText(contextMenu.node.path)
+          },
           { label: 'Rename', onSelect: () => setRenaming(contextMenu.node.path) },
           {
             label: 'Reveal in Explorer',
@@ -133,7 +163,24 @@ export default function Sidebar(): React.JSX.Element {
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto py-1">
+        <div
+          className="min-h-0 flex-1 overflow-y-auto py-1"
+          onContextMenu={(event) => {
+            if (!workspaceRoot) return
+            event.preventDefault()
+            setContextMenu({
+              x: event.clientX,
+              y: event.clientY,
+              node: {
+                name: basename(workspaceRoot),
+                path: workspaceRoot,
+                isDirectory: true,
+                isMarkdown: false,
+                kind: 'unsupported'
+              }
+            })
+          }}
+        >
           {workspaceRoot ? (
             <>
               {creating?.type === 'folder' && creating.dirPath === workspaceRoot && (
