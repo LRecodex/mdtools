@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FolderOpen, FilePlus, FolderPlus, Clock } from 'lucide-react'
+import { FolderOpen, FilePlus, FolderPlus, Clock, RotateCcw, ChevronsUp } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { basename } from '../../lib/path'
 import IconButton from '../common/IconButton'
@@ -17,10 +17,14 @@ import type { FileNode } from '../../../../shared/types'
 export default function Sidebar(): React.JSX.Element {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot)
   const childrenByDir = useAppStore((s) => s.childrenByDir)
+  const selectedFolderPath = useAppStore((s) => s.selectedFolderPath)
   const recentWorkspaces = useAppStore((s) => s.recentWorkspaces)
   const openWorkspace = useAppStore((s) => s.openWorkspace)
   const deletePath = useAppStore((s) => s.deletePath)
   const setTemplateDialog = useAppStore((s) => s.setTemplateDialog)
+  const selectFolder = useAppStore((s) => s.selectFolder)
+  const revealFolder = useAppStore((s) => s.revealFolder)
+  const collapseAllFolders = useAppStore((s) => s.collapseAllFolders)
 
   const [creating, setCreating] = useState<CreatingState | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -33,6 +37,11 @@ export default function Sidebar(): React.JSX.Element {
   }
 
   const rootChildren = workspaceRoot ? childrenByDir[workspaceRoot] : undefined
+  const createTarget = selectedFolderPath ?? workspaceRoot
+  const beginCreatingFolder = (dirPath: string): void => {
+    revealFolder(dirPath)
+    setCreating({ dirPath, type: 'folder' })
+  }
 
   const menuItems: ContextMenuItem[] = contextMenu
     ? contextMenu.node.isDirectory
@@ -43,7 +52,7 @@ export default function Sidebar(): React.JSX.Element {
           },
           {
             label: 'New Folder',
-            onSelect: () => setCreating({ dirPath: contextMenu.node.path, type: 'folder' })
+            onSelect: () => beginCreatingFolder(contextMenu.node.path)
           },
           { label: 'Rename', onSelect: () => setRenaming(contextMenu.node.path), separatorBefore: true },
           {
@@ -83,24 +92,46 @@ export default function Sidebar(): React.JSX.Element {
           </span>
           <div className="flex items-center gap-0.5">
             <IconButton
-              label="New File"
+              label={`New File${createTarget ? ` in ${basename(createTarget)}` : ''}`}
               disabled={!workspaceRoot}
-              onClick={() => workspaceRoot && setTemplateDialog({ mode: 'create', dirPath: workspaceRoot })}
+              onClick={() => createTarget && setTemplateDialog({ mode: 'create', dirPath: createTarget })}
             >
               <FilePlus size={15} />
             </IconButton>
             <IconButton
-              label="New Folder"
+              label={`New Folder${createTarget ? ` in ${basename(createTarget)}` : ''}`}
               disabled={!workspaceRoot}
-              onClick={() => workspaceRoot && setCreating({ dirPath: workspaceRoot, type: 'folder' })}
+              onClick={() => createTarget && beginCreatingFolder(createTarget)}
             >
               <FolderPlus size={15} />
+            </IconButton>
+            <IconButton label="Collapse All Folders" disabled={!workspaceRoot} onClick={collapseAllFolders}>
+              <ChevronsUp size={15} />
             </IconButton>
             <IconButton label="Open Folder" onClick={handleOpenFolder}>
               <FolderOpen size={15} />
             </IconButton>
           </div>
         </div>
+
+        {workspaceRoot && createTarget && (
+          <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-(--color-border) px-2 text-[11px] text-(--color-text-muted)" title={createTarget}>
+            <span className="shrink-0">Create in</span>
+            <FolderOpen size={12} className="shrink-0 text-amber-500" />
+            <span className="min-w-0 flex-1 truncate font-medium text-(--color-text)">{basename(createTarget)}</span>
+            {createTarget !== workspaceRoot && (
+              <button
+                type="button"
+                aria-label="Reset creation folder to workspace root"
+                title={`Create in ${basename(workspaceRoot)} instead`}
+                onClick={() => selectFolder(workspaceRoot)}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-(--color-bg-inset) hover:text-(--color-text)"
+              >
+                <RotateCcw size={11} />
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto py-1">
           {workspaceRoot ? (

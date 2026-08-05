@@ -23,6 +23,7 @@ export type TemplateDialogState =
 
 interface AppState {
   workspaceRoot: string | null
+  selectedFolderPath: string | null
   childrenByDir: Record<string, FileNode[]>
   expandedDirs: Set<string>
   loadingDirs: Set<string>
@@ -44,6 +45,9 @@ interface AppState {
   bootstrap: () => Promise<void>
   openWorkspace: (path: string) => Promise<void>
   refreshDir: (dirPath: string) => Promise<void>
+  selectFolder: (dirPath: string) => void
+  revealFolder: (dirPath: string) => void
+  collapseAllFolders: () => void
   toggleDir: (dirPath: string) => void
   openFile: (path: string) => Promise<void>
   setActiveTab: (path: string) => void
@@ -79,6 +83,7 @@ function applyThemeClass(resolved: 'light' | 'dark'): void {
 
 export const useAppStore = create<AppState>((set, get) => ({
   workspaceRoot: null,
+  selectedFolderPath: null,
   childrenByDir: {},
   expandedDirs: new Set(),
   loadingDirs: new Set(),
@@ -130,6 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const children = await window.api.fs.readDir(path)
     set({
       workspaceRoot: path,
+      selectedFolderPath: path,
       childrenByDir: { [path]: children },
       expandedDirs: new Set([path]),
       tabs: [],
@@ -153,6 +159,23 @@ export const useAppStore = create<AppState>((set, get) => ({
       done.delete(dirPath)
       set({ loadingDirs: done })
     }
+  },
+
+  selectFolder: (dirPath) => set({ selectedFolderPath: dirPath }),
+
+  revealFolder: (dirPath) => {
+    const expanded = new Set(get().expandedDirs)
+    expanded.add(dirPath)
+    set({ expandedDirs: expanded, selectedFolderPath: dirPath })
+    if (!get().childrenByDir[dirPath]) get().refreshDir(dirPath)
+  },
+
+  collapseAllFolders: () => {
+    const root = get().workspaceRoot
+    set({
+      expandedDirs: root ? new Set([root]) : new Set(),
+      selectedFolderPath: root
+    })
   },
 
   toggleDir: (dirPath) => {
@@ -259,14 +282,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   createUntitledFile: async () => {
-    const root = get().workspaceRoot
-    if (!root) return
-    set({ templateDialog: { mode: 'create', dirPath: root } })
+    const target = get().selectedFolderPath ?? get().workspaceRoot
+    if (!target) return
+    set({ templateDialog: { mode: 'create', dirPath: target } })
   },
 
   createFolder: async (dirPath, name) => {
     const path = await window.api.fs.createFolder(dirPath, name)
     await get().refreshDir(dirPath)
+    const expanded = new Set(get().expandedDirs)
+    expanded.add(dirPath)
+    expanded.add(path)
+    set({ expandedDirs: expanded, selectedFolderPath: path })
     return path
   },
 
@@ -294,6 +321,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         state.activeTabPath && (state.activeTabPath === oldPath || (isDir && (state.activeTabPath.startsWith(`${oldPath}\\`) || state.activeTabPath.startsWith(`${oldPath}/`))))
           ? `${newPath}${state.activeTabPath.slice(oldPath.length)}`
           : state.activeTabPath,
+      selectedFolderPath:
+        state.selectedFolderPath && (state.selectedFolderPath === oldPath || (isDir && (state.selectedFolderPath.startsWith(`${oldPath}\\`) || state.selectedFolderPath.startsWith(`${oldPath}/`))))
+          ? `${newPath}${state.selectedFolderPath.slice(oldPath.length)}`
+          : state.selectedFolderPath,
       childrenByDir: isDir
         ? Object.fromEntries(Object.entries(state.childrenByDir).filter(([path]) => path !== oldPath && !path.startsWith(`${oldPath}\\`) && !path.startsWith(`${oldPath}/`)))
         : state.childrenByDir,
@@ -313,7 +344,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       const activeTabPath = state.activeTabPath && removed(state.activeTabPath)
         ? tabs.at(-1)?.path ?? null
         : state.activeTabPath
-      return { tabs, activeTabPath }
+      const selectedFolderPath = state.selectedFolderPath && removed(state.selectedFolderPath)
+        ? (parent.startsWith(state.workspaceRoot ?? '') ? parent : state.workspaceRoot)
+        : state.selectedFolderPath
+      return { tabs, activeTabPath, selectedFolderPath }
     })
   },
 
@@ -377,7 +411,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       set((s) => {
         const next = { ...s.childrenByDir }
         delete next[event.path]
-        return { childrenByDir: next }
+        const selectedFolderPath = s.selectedFolderPath && (
+          s.selectedFolderPath === event.path ||
+          s.selectedFolderPath.startsWith(`${event.path}\\`) ||
+          s.selectedFolderPath.startsWith(`${event.path}/`)
+        )
+          ? (parent.startsWith(s.workspaceRoot ?? '') ? parent : s.workspaceRoot)
+          : s.selectedFolderPath
+        return { childrenByDir: next, selectedFolderPath }
       })
     }
   }

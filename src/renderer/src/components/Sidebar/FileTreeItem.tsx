@@ -13,24 +13,31 @@ export default function FileTreeItem({ node, depth }: FileTreeItemProps): React.
   const expandedDirs = useAppStore((s) => s.expandedDirs)
   const childrenByDir = useAppStore((s) => s.childrenByDir)
   const activeTabPath = useAppStore((s) => s.activeTabPath)
+  const selectedFolderPath = useAppStore((s) => s.selectedFolderPath)
   const toggleDir = useAppStore((s) => s.toggleDir)
   const openFile = useAppStore((s) => s.openFile)
+  const selectFolder = useAppStore((s) => s.selectFolder)
   const renamePath = useAppStore((s) => s.renamePath)
   const { creating, renaming, setRenaming, setContextMenu } = useTreeUI()
 
   const isExpanded = expandedDirs.has(node.path)
   const isActive = activeTabPath === node.path
+  const isSelectedFolder = node.isDirectory && selectedFolderPath === node.path
   const isRenaming = renaming === node.path
   const children = childrenByDir[node.path]
 
   const handleClick = (): void => {
-    if (node.isDirectory) toggleDir(node.path)
+    if (node.isDirectory) {
+      selectFolder(node.path)
+      toggleDir(node.path)
+    }
     else openFile(node.path)
   }
 
   const handleContextMenu = (e: React.MouseEvent): void => {
     e.preventDefault()
     e.stopPropagation()
+    if (node.isDirectory) selectFolder(node.path)
     setContextMenu({ x: e.clientX, y: e.clientY, node })
   }
 
@@ -47,7 +54,9 @@ export default function FileTreeItem({ node, depth }: FileTreeItemProps): React.
         className={`group flex h-7 cursor-pointer items-center gap-1 rounded-md pr-2 text-sm ${
           isActive
             ? 'bg-(--color-accent) text-(--color-accent-fg)'
-            : 'text-(--color-text) hover:bg-(--color-bg-inset)'
+            : isSelectedFolder
+              ? 'bg-(--color-accent)/12 text-(--color-text) ring-1 ring-inset ring-(--color-accent)/35'
+              : 'text-(--color-text) hover:bg-(--color-bg-inset)'
         }`}
       >
         {node.isDirectory ? (

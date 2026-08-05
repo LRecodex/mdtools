@@ -20,7 +20,10 @@ export function useKeyboardShortcuts(): void {
         e.preventDefault()
         const activeTab = state.tabs.find((tab) => tab.path === state.activeTabPath)
         if (activeTab?.kind === 'markdown') state.setTemplateDialog({ mode: 'replace', path: activeTab.path })
-        else if (state.workspaceRoot) state.setTemplateDialog({ mode: 'create', dirPath: state.workspaceRoot })
+        else {
+          const target = state.selectedFolderPath ?? state.workspaceRoot
+          if (target) state.setTemplateDialog({ mode: 'create', dirPath: target })
+        }
         return
       }
 

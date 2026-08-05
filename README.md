@@ -49,7 +49,7 @@ src/
 
 | | |
 | --- | --- |
-| **Workspace browsing** | Open a folder and create, rename, and delete files/folders right from the sidebar |
+| **Workspace browsing** | Open a folder and create, rename, and delete files/folders right from the sidebar; new items follow the selected folder |
 | **Tabs** | Work on several files at once; closing a tab with unsaved changes prompts you first |
 | **Source / Split / Preview** | Switch between raw markdown, a live side-by-side split, or a full rendered preview |
 | **Formatting toolbar** | Insert or wrap headings, bold/italic text, links, lists, tasks, tables, code, and Mermaid templates |
