@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, screen, type Rectangle } from 'electron'
 import { join } from 'path'
 import { is } from './is'
 import { registerFileSystemHandlers } from './ipc/fileSystem'
@@ -8,17 +8,25 @@ import { registerSettingsHandlers } from './ipc/settings'
 import { registerWatcherHandlers } from './watcher'
 import { getSettings, updateSettings } from './settings'
 
+const DEFAULT_WINDOW_WIDTH = 1280
+const DEFAULT_WINDOW_HEIGHT = 800
+const MIN_WINDOW_WIDTH = 760
+const MIN_WINDOW_HEIGHT = 480
+const MIN_VISIBLE_WIDTH = 100
+const MIN_VISIBLE_HEIGHT = 100
+
 function createWindow(): void {
   const { windowBounds } = getSettings()
+  const initialBounds = getInitialWindowBounds(windowBounds)
 
   const mainWindow = new BrowserWindow({
     title: 'MD Tools',
-    width: windowBounds?.width ?? 1280,
-    height: windowBounds?.height ?? 800,
-    x: windowBounds?.x,
-    y: windowBounds?.y,
-    minWidth: 760,
-    minHeight: 480,
+    width: initialBounds.width,
+    height: initialBounds.height,
+    x: initialBounds.x,
+    y: initialBounds.y,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     show: false,
     frame: false,
     backgroundColor: '#1e1f22',
@@ -54,6 +62,43 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+}
+
+function getInitialWindowBounds(
+  bounds: { width: number; height: number; x?: number; y?: number } | null
+): Rectangle {
+  const primaryWorkArea = screen.getPrimaryDisplay().workArea
+  const width = normalizeDimension(bounds?.width, DEFAULT_WINDOW_WIDTH, MIN_WINDOW_WIDTH, primaryWorkArea.width)
+  const height = normalizeDimension(bounds?.height, DEFAULT_WINDOW_HEIGHT, MIN_WINDOW_HEIGHT, primaryWorkArea.height)
+
+  if (typeof bounds?.x !== 'number' || typeof bounds.y !== 'number') {
+    return { width, height, ...centerBounds(primaryWorkArea, width, height) }
+  }
+
+  const restored = { x: bounds.x, y: bounds.y, width, height }
+  if (isWindowVisible(restored)) return restored
+
+  return { width, height, ...centerBounds(primaryWorkArea, width, height) }
+}
+
+function normalizeDimension(value: number | undefined, fallback: number, min: number, max: number): number {
+  const normalized = typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : fallback
+  return Math.max(min, Math.min(normalized, Math.max(min, max)))
+}
+
+function centerBounds(workArea: Rectangle, width: number, height: number): Pick<Rectangle, 'x' | 'y'> {
+  return {
+    x: Math.round(workArea.x + (workArea.width - width) / 2),
+    y: Math.round(workArea.y + (workArea.height - height) / 2)
+  }
+}
+
+function isWindowVisible(bounds: Rectangle): boolean {
+  return screen.getAllDisplays().some(({ workArea }) => {
+    const visibleWidth = Math.min(bounds.x + bounds.width, workArea.x + workArea.width) - Math.max(bounds.x, workArea.x)
+    const visibleHeight = Math.min(bounds.y + bounds.height, workArea.y + workArea.height) - Math.max(bounds.y, workArea.y)
+    return visibleWidth >= MIN_VISIBLE_WIDTH && visibleHeight >= MIN_VISIBLE_HEIGHT
+  })
 }
 
 function persistBounds(win: BrowserWindow): void {
