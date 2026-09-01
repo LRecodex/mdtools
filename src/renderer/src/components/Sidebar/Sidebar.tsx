@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { FolderOpen, FilePlus, FolderPlus, Clock, RotateCcw, ChevronsUp } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { basename } from '../../lib/path'
@@ -25,6 +25,8 @@ export default function Sidebar(): React.JSX.Element {
   const selectFolder = useAppStore((s) => s.selectFolder)
   const revealFolder = useAppStore((s) => s.revealFolder)
   const collapseAllFolders = useAppStore((s) => s.collapseAllFolders)
+  const sidebarWidth = useAppStore((s) => s.sidebarWidth)
+  const setSidebarWidth = useAppStore((s) => s.setSidebarWidth)
   const copiedPath = useAppStore((s) => s.copiedPath)
   const copyPath = useAppStore((s) => s.copyPath)
   const pastePath = useAppStore((s) => s.pastePath)
@@ -33,10 +35,26 @@ export default function Sidebar(): React.JSX.Element {
   const [renaming, setRenaming] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<FileNode | null>(null)
+  const resizeStart = useRef<{ x: number; width: number } | null>(null)
 
   const handleOpenFolder = async (): Promise<void> => {
     const path = await window.api.dialog.openFolder()
     if (path) openWorkspace(path)
+  }
+
+  const beginResize = (event: React.PointerEvent<HTMLDivElement>): void => {
+    resizeStart.current = { x: event.clientX, width: sidebarWidth }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const resize = (event: React.PointerEvent<HTMLDivElement>): void => {
+    if (!resizeStart.current) return
+    setSidebarWidth(resizeStart.current.width + event.clientX - resizeStart.current.x)
+  }
+
+  const endResize = (event: React.PointerEvent<HTMLDivElement>): void => {
+    resizeStart.current = null
+    event.currentTarget.releasePointerCapture(event.pointerId)
   }
 
   const rootChildren = workspaceRoot ? childrenByDir[workspaceRoot] : undefined
@@ -115,7 +133,10 @@ export default function Sidebar(): React.JSX.Element {
     <TreeUIContext.Provider
       value={{ creating, setCreating, renaming, setRenaming, contextMenu, setContextMenu, confirmDelete, setConfirmDelete }}
     >
-      <aside className="flex w-64 shrink-0 flex-col border-r border-(--color-border) bg-(--color-bg-elevated)">
+      <aside
+        className="relative flex shrink-0 flex-col border-r border-(--color-border) bg-(--color-bg-elevated)"
+        style={{ width: sidebarWidth }}
+      >
         <div className="flex h-9 shrink-0 items-center justify-between border-b border-(--color-border) px-2">
           <span className="truncate text-xs font-semibold uppercase tracking-wide text-(--color-text-muted)">
             {workspaceRoot ? basename(workspaceRoot) : 'Explorer'}
@@ -225,6 +246,21 @@ export default function Sidebar(): React.JSX.Element {
             </div>
           )}
         </div>
+        <div className="flex h-7 shrink-0 items-center justify-between gap-2 border-t border-(--color-border) px-2 text-[11px] text-(--color-text-muted)">
+          <span className="truncate">Current version: v1.6.0</span>
+          <span className="shrink-0">Made by LRecodex</span>
+        </div>
+        <div
+          role="separator"
+          aria-label="Resize sidebar"
+          title="Drag to resize sidebar. Double-click to reset."
+          onPointerDown={beginResize}
+          onPointerMove={resize}
+          onPointerUp={endResize}
+          onPointerCancel={endResize}
+          onDoubleClick={() => setSidebarWidth(256)}
+          className="absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize touch-none hover:bg-(--color-accent)/30"
+        />
       </aside>
 
       {contextMenu && (

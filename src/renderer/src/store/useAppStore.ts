@@ -33,11 +33,13 @@ interface AppState {
   resolvedTheme: 'light' | 'dark'
   editorMode: Settings['editorMode']
   sidebarVisible: boolean
+  sidebarWidth: number
   recentWorkspaces: string[]
   quickOpenOpen: boolean
   helpOpen: boolean
   templateDialog: TemplateDialogState | null
   pendingCloseTab: string | null
+  pendingCloseTabs: string[]
   bootstrapped: boolean
   cursorPosition: { line: number; col: number } | null
   copiedPath: string | null
@@ -56,6 +58,7 @@ interface AppState {
   updateTabContent: (path: string, content: string) => void
   saveTab: (path: string) => Promise<void>
   requestCloseTab: (path: string) => void
+  requestCloseTabs: (paths: string[]) => void
   confirmCloseTab: (path: string) => void
   cancelCloseTab: () => void
   createFile: (dirPath: string, name: string, content?: string) => Promise<string>
@@ -68,6 +71,7 @@ interface AppState {
   setTheme: (theme: Settings['theme']) => void
   setEditorMode: (mode: Settings['editorMode']) => void
   toggleSidebar: () => void
+  setSidebarWidth: (width: number) => void
   setQuickOpenOpen: (open: boolean) => void
   setHelpOpen: (open: boolean) => void
   setTemplateDialog: (dialog: TemplateDialogState | null) => void
@@ -85,6 +89,24 @@ function applyThemeClass(resolved: 'light' | 'dark'): void {
   document.documentElement.classList.toggle('dark', resolved === 'dark')
 }
 
+function nextActiveTabPath(tabs: Tab[], closingPaths: Set<string>, activeTabPath: string | null): string | null {
+  const remaining = tabs.filter((tab) => !closingPaths.has(tab.path))
+  if (remaining.length === 0) return null
+  if (activeTabPath && !closingPaths.has(activeTabPath)) return activeTabPath
+
+  const activeIndex = activeTabPath ? tabs.findIndex((tab) => tab.path === activeTabPath) : -1
+  const fallbackIndex = activeIndex >= 0 ? activeIndex : tabs.length - 1
+  return remaining[Math.min(fallbackIndex, remaining.length - 1)]?.path ?? remaining.at(-1)?.path ?? null
+}
+
+function closeTabPaths(state: AppState, paths: string[]): Pick<AppState, 'tabs' | 'activeTabPath'> {
+  const closingPaths = new Set(paths)
+  return {
+    tabs: state.tabs.filter((tab) => !closingPaths.has(tab.path)),
+    activeTabPath: nextActiveTabPath(state.tabs, closingPaths, state.activeTabPath)
+  }
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   workspaceRoot: null,
   selectedFolderPath: null,
@@ -97,11 +119,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   resolvedTheme: 'light',
   editorMode: 'split',
   sidebarVisible: true,
+  sidebarWidth: 256,
   recentWorkspaces: [],
   quickOpenOpen: false,
   helpOpen: false,
   templateDialog: null,
   pendingCloseTab: null,
+  pendingCloseTabs: [],
   bootstrapped: false,
   cursorPosition: null,
   copiedPath: null,
@@ -117,6 +141,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       resolvedTheme: resolved,
       editorMode: settings.editorMode,
       sidebarVisible: settings.sidebarVisible,
+      sidebarWidth: settings.sidebarWidth,
       recentWorkspaces: settings.recentWorkspaces,
       bootstrapped: true
     })
@@ -258,27 +283,38 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   requestCloseTab: (path) => {
-    const tab = get().tabs.find((t) => t.path === path)
-    if (tab?.dirty) {
-      set({ pendingCloseTab: path })
-    } else {
-      get().confirmCloseTab(path)
+    get().requestCloseTabs([path])
+  },
+
+  requestCloseTabs: (paths) => {
+    const uniquePaths = [...new Set(paths)].filter((path) => get().tabs.some((tab) => tab.path === path))
+    if (uniquePaths.length === 0) return
+
+    const dirtyPaths = uniquePaths.filter((path) => get().tabs.find((tab) => tab.path === path)?.dirty)
+    const cleanPaths = uniquePaths.filter((path) => !dirtyPaths.includes(path))
+
+    if (cleanPaths.length > 0) {
+      set((state) => closeTabPaths(state, cleanPaths))
+    }
+
+    const [pendingCloseTab, ...pendingCloseTabs] = dirtyPaths
+    if (pendingCloseTab) {
+      set({ pendingCloseTab, pendingCloseTabs })
     }
   },
 
   confirmCloseTab: (path) => {
-    set((state) => {
-      const tabs = state.tabs.filter((t) => t.path !== path)
-      let activeTabPath = state.activeTabPath
-      if (activeTabPath === path) {
-        const idx = state.tabs.findIndex((t) => t.path === path)
-        activeTabPath = tabs[idx]?.path ?? tabs[idx - 1]?.path ?? null
-      }
-      return { tabs, activeTabPath, pendingCloseTab: null }
-    })
+    const queuedTabs = get().pendingCloseTabs
+    const nextPending = queuedTabs.find((queuedPath) => queuedPath !== path) ?? null
+    const nextQueue = queuedTabs.filter((queuedPath) => queuedPath !== path && queuedPath !== nextPending)
+    set((state) => ({
+      ...closeTabPaths(state, [path]),
+      pendingCloseTab: nextPending,
+      pendingCloseTabs: nextQueue
+    }))
   },
 
-  cancelCloseTab: () => set({ pendingCloseTab: null }),
+  cancelCloseTab: () => set({ pendingCloseTab: null, pendingCloseTabs: [] }),
 
   createFile: async (dirPath, name, content = '') => {
     const path = await window.api.fs.createFile(dirPath, name, content)
@@ -388,6 +424,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const sidebarVisible = !get().sidebarVisible
     set({ sidebarVisible })
     window.api.settings.update({ sidebarVisible })
+  },
+
+  setSidebarWidth: (width) => {
+    const sidebarWidth = Math.round(Math.min(520, Math.max(208, width)))
+    set({ sidebarWidth })
+    window.api.settings.update({ sidebarWidth })
   },
 
   setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),

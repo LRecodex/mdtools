@@ -50,11 +50,11 @@ src/
 | | |
 | --- | --- |
 | **Workspace browsing** | Open a folder and create, rename, and delete files/folders right from the sidebar; new items follow the selected folder |
-| **Tabs** | Work on several files at once; closing a tab with unsaved changes prompts you first |
+| **Tabs** | Work on several files at once; right-click tabs to close current/others/right/all, copy paths, or reveal files |
 | **Source / Split / Preview** | Switch between raw markdown, a live side-by-side split, or a full rendered preview |
 | **Formatting toolbar** | Insert or wrap headings, bold/italic text, links, lists, tasks, tables, code, and Mermaid templates |
 | **Document templates** | Start quickly with 15 templates for meetings, projects, study, development, journals, checklists, and more |
-| **Collapsible sidebar** | Hide or restore the workspace navigation from the title bar or with `Ctrl+Shift+B` |
+| **Resizable sidebar** | Drag the workspace navigation edge for long file names; double-click the edge to reset |
 | **Autosave** | Changes save automatically shortly after you stop typing, or instantly with `Ctrl+S` |
 | **Quick Open** | `Ctrl+P` fuzzy-searches every file in the workspace |
 | **Themes** | Light / dark / system, cycled with `Ctrl+,` |
@@ -91,8 +91,10 @@ graph TD
 | `Ctrl+O` | Open folder |
 | `Ctrl+S` | Save current file |
 | `Ctrl+W` | Close current tab |
+| `Ctrl+Shift+W` | Close all tabs |
 | `Ctrl+P` | Quick Open |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Ctrl+PageUp` / `Ctrl+PageDown` | Previous / next tab |
 | `Ctrl+Shift+B` | Show / hide sidebar |
 | `Ctrl+Shift+T` | Apply a template to the current document (with replacement confirmation) |
 | `Ctrl+,` | Cycle theme (system → light → dark) |

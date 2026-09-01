@@ -27,6 +27,23 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      if (e.shiftKey && e.key.toLowerCase() === 'w') {
+        e.preventDefault()
+        state.requestCloseTabs(state.tabs.map((tab) => tab.path))
+        return
+      }
+
+      if (e.key === 'PageUp' || e.key === 'PageDown') {
+        if (state.tabs.length > 1) {
+          e.preventDefault()
+          const idx = state.tabs.findIndex((t) => t.path === state.activeTabPath)
+          const delta = e.key === 'PageUp' ? -1 : 1
+          const next = (idx + delta + state.tabs.length) % state.tabs.length
+          state.setActiveTab(state.tabs[next].path)
+        }
+        return
+      }
+
       switch (e.key.toLowerCase()) {
         case 'n':
           e.preventDefault()

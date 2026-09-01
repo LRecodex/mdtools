@@ -44,6 +44,8 @@ export default function StatusBar(): React.JSX.Element {
         ) : null}
       </div>
       <div className="flex items-center gap-3">
+        <span className="shrink-0">v1.6.0</span>
+        <span className="shrink-0">Made by LRecodex</span>
         {activeTab?.editable && (
           <>
             <span>{countWords(activeTab.content)} words</span>

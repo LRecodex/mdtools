@@ -13,9 +13,10 @@ interface ContextMenuProps {
   y: number
   items: ContextMenuItem[]
   onClose: () => void
+  renderIcon?: (item: ContextMenuItem) => React.ReactNode
 }
 
-export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps): React.JSX.Element {
+export default function ContextMenu({ x, y, items, onClose, renderIcon }: ContextMenuProps): React.JSX.Element {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps):
           <button
             type="button"
             disabled={item.disabled}
-            className={`block w-full rounded-md px-3 py-1.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent disabled:hover:text-inherit hover:bg-(--color-accent) hover:text-(--color-accent-fg) ${
+            className={`flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent disabled:hover:text-inherit hover:bg-(--color-accent) hover:text-(--color-accent-fg) ${
               item.danger ? 'text-red-500 hover:bg-red-600 hover:text-white' : ''
             }`}
             onClick={() => {
@@ -57,7 +58,8 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps):
               onClose()
             }}
           >
-            {item.label}
+            {renderIcon?.(item)}
+            <span>{item.label}</span>
           </button>
         </div>
       ))}

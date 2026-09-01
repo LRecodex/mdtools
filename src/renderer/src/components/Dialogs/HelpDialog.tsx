@@ -26,7 +26,7 @@ const FEATURES: { icon: typeof FolderOpen; title: string; description: string }[
   {
     icon: Files,
     title: 'Tabs',
-    description: 'Work on multiple files at once, with an unsaved-changes prompt before closing a dirty tab.'
+    description: 'Right-click a tab to close it, close others, close tabs to the right, copy its path, or reveal it in Explorer.'
   },
   {
     icon: Columns2,
@@ -37,6 +37,11 @@ const FEATURES: { icon: typeof FolderOpen; title: string; description: string }[
     icon: Search,
     title: 'Quick Open',
     description: 'Press Ctrl+P to fuzzy-search and jump to any file in the workspace.'
+  },
+  {
+    icon: FolderOpen,
+    title: 'Resizable sidebar',
+    description: 'Drag the explorer edge when long file names need more room; double-click the edge to reset it.'
   },
   {
     icon: Save,
@@ -76,9 +81,11 @@ const SHORTCUTS: { keys: string; action: string }[] = [
   { keys: 'Ctrl+O', action: 'Open folder' },
   { keys: 'Ctrl+S', action: 'Save current file' },
   { keys: 'Ctrl+W', action: 'Close current tab' },
+  { keys: 'Ctrl+Shift+W', action: 'Close all tabs' },
   { keys: 'Ctrl+P', action: 'Quick Open' },
   { keys: 'Ctrl+Tab', action: 'Next tab' },
   { keys: 'Ctrl+Shift+Tab', action: 'Previous tab' },
+  { keys: 'Ctrl+PageUp / PageDown', action: 'Previous / next tab' },
   { keys: 'Ctrl+Shift+B', action: 'Show or hide sidebar' },
   { keys: 'Ctrl+Shift+T', action: 'Apply a template to the current document' },
   { keys: 'Ctrl+,', action: 'Cycle theme' },
