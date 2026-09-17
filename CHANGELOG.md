@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.8.1 - 2026-09-17
+
+- Focused the Support LRecodex donation image on the scannable QR code and improved its dialog presentation.
+- Added packaged-app update checks against the GitHub Releases feed so installed builds can download the latest release automatically.
+
+## 1.8.0 - 2026-09-17
+
+- Extended workspace Quick Open: Ctrl+P now searches file and folder names, paths, and contents of Markdown, text, JSON, code, and CSV files.
+- Content results show a short matching excerpt so the right document is easy to identify before opening it.
+- Added a Support LRecodex section in the sidebar with a Maybank donation QR code.
+
+## 1.7.0 - 2026-09-17
+
+- Fixed status bar alignment: long paths truncate, counters stay on one line, and secondary counters hide as the window narrows.
+- Added a visible sidebar search button and extended Ctrl+P to find files and folders by name or relative path, including multi-word queries.
+- Selecting a folder search result expands its ancestors and reveals the folder in the sidebar.
+- Added Ctrl+F and a search toolbar button for the current document in Source, Split, and Preview modes.
+- Preview search highlights matches, displays a match counter, and supports case sensitivity, next/previous, Enter/Shift+Enter, F3/Shift+F3, and Escape.
+- Source and Split search include find/replace, whole-word matching, and regular expressions through CodeMirror.
+- Added loading, empty, error, result-limit, and keyboard navigation handling for workspace search.
+- Added Electron integration coverage for search, replacement, folder navigation, and responsive status bar layout.
+
 ## 1.6.0 - 2026-09-01
 
 - Added tab right-click actions for closing the current tab, other tabs, tabs to the right, saved tabs, or all tabs.

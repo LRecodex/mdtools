@@ -3,7 +3,7 @@ import { promises as fs } from 'fs'
 import { join, extname, dirname, basename, parse, relative, resolve, sep } from 'path'
 import mammoth from 'mammoth'
 import ExcelJS from 'exceljs'
-import { documentKind, isCreatableKind, isEditableKind, type FileNode, type OpenedDocument, type SpreadsheetData } from '../../shared/types'
+import { documentKind, isCreatableKind, isEditableKind, type FileNode, type OpenedDocument, type SearchResult, type SpreadsheetData } from '../../shared/types'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdx'])
 
@@ -111,34 +111,71 @@ function validateChildName(name: string): string {
 
 const IGNORED_DIRS = new Set(['node_modules', '.git', 'dist', 'out', 'release', '.cache'])
 const SEARCH_RESULT_CAP = 200
+const SEARCH_FILE_SIZE_LIMIT = 2 * 1024 * 1024
+const SEARCHABLE_KINDS = new Set(['markdown', 'text', 'json', 'code', 'csv'])
 
-async function searchFiles(root: string, query: string): Promise<FileNode[]> {
-  const q = query.trim().toLowerCase()
-  const results: FileNode[] = []
+function contentMatchContext(content: string, query: string, terms: string[]): string | undefined {
+  const lowered = content.toLocaleLowerCase()
+  const phrasePosition = lowered.indexOf(query)
+  const positions = terms.map((term) => lowered.indexOf(term))
+  if (phrasePosition < 0 && positions.some((position) => position < 0)) return undefined
+
+  const position = phrasePosition >= 0 ? phrasePosition : Math.min(...positions)
+  const start = Math.max(0, position - 52)
+  const end = Math.min(content.length, position + Math.max(query.length, 1) + 108)
+  return `${start > 0 ? '…' : ''}${content.slice(start, end).replace(/\s+/g, ' ').trim()}${end < content.length ? '…' : ''}`
+}
+
+async function searchFileContent(path: string, query: string, terms: string[]): Promise<string | undefined> {
+  try {
+    const stats = await fs.stat(path)
+    if (stats.size > SEARCH_FILE_SIZE_LIMIT) return undefined
+    return contentMatchContext(await fs.readFile(path, 'utf-8'), query, terms)
+  } catch {
+    // Files can change or be unavailable while a workspace is being searched.
+    return undefined
+  }
+}
+
+async function searchFiles(root: string, rawQuery: string): Promise<SearchResult[]> {
+  const query = rawQuery.trim().toLocaleLowerCase()
+  const terms = query.replace(/\\/g, '/').split(/\s+/).filter(Boolean)
+  const results: SearchResult[] = []
 
   async function walk(dir: string): Promise<void> {
     if (results.length >= SEARCH_RESULT_CAP) return
     let entries: Awaited<ReturnType<typeof readDirEntries>>
     try {
       entries = await readDirEntries(dir)
-    } catch {
+    } catch (error) {
+      if (dir === root) throw error
       return
     }
     for (const entry of entries) {
       if (results.length >= SEARCH_RESULT_CAP) return
       if (entry.name.startsWith('.')) continue
       const full = join(dir, entry.name)
+      const pathMatches = terms.every((term) => relative(root, full).replace(/\\/g, '/').toLocaleLowerCase().includes(term))
       if (entry.isDirectory()) {
         if (IGNORED_DIRS.has(entry.name)) continue
+        if (pathMatches) results.push({ name: entry.name, path: full, isDirectory: true, isMarkdown: false, kind: 'unsupported', matchedInContent: false })
         await walk(full)
-      } else if (!q || entry.name.toLowerCase().includes(q)) {
-        results.push({
-          name: entry.name,
-          path: full,
-          isDirectory: false,
-          isMarkdown: isMarkdownFile(entry.name),
-          kind: documentKind(entry.name)
-        })
+      } else if (entry.isFile()) {
+        const kind = documentKind(entry.name)
+        const matchContext = pathMatches || !query || !SEARCHABLE_KINDS.has(kind)
+          ? undefined
+          : await searchFileContent(full, query, terms)
+        if (pathMatches || matchContext) {
+          results.push({
+            name: entry.name,
+            path: full,
+            isDirectory: false,
+            isMarkdown: isMarkdownFile(entry.name),
+            kind,
+            matchContext,
+            matchedInContent: Boolean(matchContext)
+          })
+        }
       }
     }
   }

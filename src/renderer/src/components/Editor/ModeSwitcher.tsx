@@ -19,6 +19,8 @@ export default function ModeSwitcher(): React.JSX.Element {
           key={key}
           type="button"
           title={label}
+          aria-label={label}
+          aria-pressed={editorMode === key}
           onClick={() => setEditorMode(key)}
           className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
             editorMode === key
@@ -27,7 +29,7 @@ export default function ModeSwitcher(): React.JSX.Element {
           }`}
         >
           <Icon size={13} />
-          {label}
+          <span className="toolbar-label">{label}</span>
         </button>
       ))}
     </div>

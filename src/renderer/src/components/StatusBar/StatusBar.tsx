@@ -30,9 +30,9 @@ export default function StatusBar(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-6 shrink-0 items-center justify-between border-t border-(--color-border) bg-(--color-titlebar) px-3 text-xs text-(--color-text-muted)">
-      <div className="flex items-center gap-3 truncate">
-        {activeTab && <span className="truncate text-select">{activeTab.path}</span>}
+    <div className="status-bar flex h-7 min-w-0 shrink-0 items-center gap-3 border-t border-(--color-border) bg-(--color-titlebar) px-3 text-xs text-(--color-text-muted)">
+      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden whitespace-nowrap">
+        {activeTab && <span className="min-w-0 truncate text-select" title={activeTab.path}>{activeTab.path}</span>}
         {activeTab?.saveError ? (
           <span className="shrink-0 text-red-500" title={activeTab.saveError}>Save failed</span>
         ) : activeTab?.saving ? (
@@ -43,16 +43,14 @@ export default function StatusBar(): React.JSX.Element {
           <span className="shrink-0">{activeTab.editable ? 'Saved' : 'Read only'}</span>
         ) : null}
       </div>
-      <div className="flex items-center gap-3">
-        <span className="shrink-0">v1.6.0</span>
-        <span className="shrink-0">Made by LRecodex</span>
+      <div className="status-metrics flex shrink-0 items-center gap-3 whitespace-nowrap tabular-nums">
         {activeTab?.editable && (
           <>
             <span>{countWords(activeTab.content)} words</span>
-            <span>{readingTime(activeTab.content)}</span>
-            <span>{activeTab.content.length} chars</span>
+            <span className="status-reading">{readingTime(activeTab.content)}</span>
+            <span className="status-chars">{activeTab.content.length} chars</span>
             {cursorPosition && (
-              <span>
+              <span className="status-cursor">
                 Ln {cursorPosition.line}, Col {cursorPosition.col}
               </span>
             )}

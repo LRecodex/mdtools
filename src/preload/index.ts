@@ -1,5 +1,5 @@
 import { clipboard, contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { FileNode, OpenedDocument, Settings, WatchEvent } from '../shared/types'
+import type { FileNode, OpenedDocument, SearchResult, Settings, WatchEvent } from '../shared/types'
 
 const api = {
   fs: {
@@ -18,7 +18,7 @@ const api = {
     copy: (sourcePath: string, destinationDir: string): Promise<string> =>
       ipcRenderer.invoke('fs:copy', sourcePath, destinationDir),
     exists: (path: string): Promise<boolean> => ipcRenderer.invoke('fs:exists', path),
-    searchFiles: (root: string, query: string): Promise<FileNode[]> =>
+    searchFiles: (root: string, query: string): Promise<SearchResult[]> =>
       ipcRenderer.invoke('fs:searchFiles', root, query)
   },
   clipboard: {

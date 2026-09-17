@@ -2,6 +2,20 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+.status-bar { container-type: inline-size; }
+.editor-pane { container: editor / inline-size; }
+@container editor (max-width: 650px) { .toolbar-label { display: none; } }
+@container (max-width: 650px) { .status-reading { display: none; } }
+@container (max-width: 470px) { .status-chars { display: none; } }
+@container (max-width: 340px) { .status-cursor { display: none; } }
+::highlight(document-matches) { background-color: #facc15; color: #171717; }
+::highlight(document-current) { background-color: #fb923c; color: #171717; }
+.cm-panels { background: var(--color-bg-elevated) !important; color: var(--color-text) !important; }
+.cm-search { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 28px 6px 8px !important; }
+.cm-search input, .cm-search button { font: inherit; }
+.cm-search input[type=text], .cm-search .cm-textfield { min-width: 60px; max-width: 100%; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 4px; padding: 3px 6px; }
+.cm-search .cm-button { background: var(--color-bg-inset); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 4px; }
+
 @theme {
   --font-sans:
     'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;

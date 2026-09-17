@@ -98,7 +98,7 @@ export default function EditorPane(): React.JSX.Element {
   }, [activeTab?.path, setCursorPosition])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="editor-pane flex min-h-0 min-w-0 flex-1 flex-col">
       <EditorTabs />
       {activeTab ? (
         activeTab.kind !== 'markdown' ? (
@@ -116,6 +116,7 @@ export default function EditorPane(): React.JSX.Element {
               <span className="rounded-full bg-(--color-bg-inset) px-2 py-0.5 text-[11px] uppercase tracking-wide text-(--color-text-muted)">
                 {activeTab.kind}
               </span>
+              {activeTab.editable && <button type="button" aria-label="Find in document" title="Find in document (Ctrl+F)" onClick={() => window.dispatchEvent(new Event('mdtools:find'))} className="rounded p-1 hover:bg-(--color-bg-inset)"><Search size={15} /></button>}
             </div>
             <div className="min-h-0 flex-1 overflow-hidden">
               {activeTab.editable ? (
@@ -138,28 +139,31 @@ export default function EditorPane(): React.JSX.Element {
             {editorMode !== 'preview' ? (
               <FormattingToolbar onFormat={(format) => editorRef.current?.applyFormat(format)} />
             ) : (
-              <span className="min-w-0 flex-1 px-1 text-xs text-(--color-text-muted)">Preview</span>
+              <span className="toolbar-label min-w-0 flex-1 truncate px-1 text-xs text-(--color-text-muted)">Preview</span>
             )}
             <div className="ml-2 flex shrink-0 items-center gap-1 border-l border-(--color-border) pl-2">
+              <button type="button" aria-label="Find in document" title="Find in document (Ctrl+F)" onClick={() => window.dispatchEvent(new Event('mdtools:find'))} className="rounded p-1.5 text-(--color-text-muted) hover:bg-(--color-bg-inset)"><Search size={15} /></button>
               {exportError && <span className="max-w-36 truncate text-xs text-red-500" title={exportError}>Export failed</span>}
               <button
                 type="button"
                 disabled={isExportingPdf}
                 title="Export rendered preview as PDF"
+                aria-label="PDF"
                 onClick={handleExportPdf}
                 className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text) disabled:opacity-50"
               >
                 <Download size={14} />
-                {isExportingPdf ? 'Exporting…' : 'PDF'}
+                <span className="toolbar-label">{isExportingPdf ? 'Exporting…' : 'PDF'}</span>
               </button>
               <button
                 type="button"
                 title="Replace content from a template (Ctrl+Shift+T)"
+                aria-label="Templates"
                 onClick={() => setTemplateDialog({ mode: 'replace', path: activeTab.path })}
                 className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text)"
               >
                 <LayoutTemplate size={14} />
-                Templates
+                <span className="toolbar-label">Templates</span>
               </button>
               <ModeSwitcher />
             </div>

@@ -10,6 +10,13 @@ export function useKeyboardShortcuts(): void {
       if (!mod) return
       const state = useAppStore.getState()
 
+      if (e.key.toLowerCase() === 'f' && !e.shiftKey && state.activeTabPath && !state.quickOpenOpen && !state.helpOpen && !state.templateDialog) {
+        e.preventDefault()
+        e.stopPropagation()
+        window.dispatchEvent(new Event('mdtools:find'))
+        return
+      }
+
       if (e.shiftKey && e.key.toLowerCase() === 'b') {
         e.preventDefault()
         state.toggleSidebar()
@@ -99,7 +106,7 @@ export function useKeyboardShortcuts(): void {
       }
     }
 
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
   }, [])
 }

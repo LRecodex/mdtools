@@ -15,7 +15,7 @@ win:
     - target: portable
       arch: [x64]
   icon: build/icon.ico
-  artifactName: ${productName}-Setup-${version}.${ext}
+  artifactName: MD-Tools-Setup-${version}.${ext}
 nsis:
   oneClick: false
   perMachine: false
@@ -24,4 +24,8 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: MD Tools
 portable:
-  artifactName: ${productName}-Portable-${version}.${ext}
+  artifactName: MD-Tools-Portable-${version}.${ext}
+publish:
+  provider: github
+  owner: LRecodex
+  repo: mdtools-releases

@@ -6,6 +6,12 @@ export interface FileNode {
   kind: DocumentKind
 }
 
+export interface SearchResult extends FileNode {
+  /** A short excerpt around a text match, when the file contents matched. */
+  matchContext?: string
+  matchedInContent: boolean
+}
+
 export type DocumentKind =
   | 'markdown'
   | 'text'

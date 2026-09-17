@@ -1,6 +1,6 @@
 {
   "name": "mdtools",
-  "version": "1.6.0",
+  "version": "1.8.1",
   "description": "A fast, polished desktop app for browsing, viewing, and authoring Markdown files.",
   "author": "Fauzul Azim",
   "main": "out/main/index.js",
@@ -10,6 +10,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "npm run build && playwright test",
     "postinstall": "electron-builder install-app-deps",
     "icon": "node scripts/generate-icon.mjs",
     "dist": "npm run build && electron-builder --win",
@@ -22,6 +23,7 @@
     "@codemirror/lang-markdown": "^6.3.1",
     "@codemirror/language": "^6.10.6",
     "@codemirror/language-data": "^6.5.2",
+    "@codemirror/search": "^6.7.2",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.35.3",
     "@lezer/highlight": "^1.2.1",
@@ -29,6 +31,7 @@
     "chokidar": "^4.0.3",
     "codemirror": "^6.0.1",
     "dompurify": "^3.4.12",
+    "electron-updater": "^6.8.9",
     "exceljs": "^4.4.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^0.468.0",
@@ -41,6 +44,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.10.2",

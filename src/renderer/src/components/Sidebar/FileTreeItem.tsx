@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { ChevronRight, Folder, FolderOpen, FileText, File as FileIcon } from 'lucide-react'
 import type { FileNode } from '../../../../shared/types'
 import { useAppStore } from '../../store/useAppStore'
@@ -25,6 +26,10 @@ export default function FileTreeItem({ node, depth }: FileTreeItemProps): React.
   const isSelectedFolder = node.isDirectory && selectedFolderPath === node.path
   const isRenaming = renaming === node.path
   const children = childrenByDir[node.path]
+  const rowRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (isSelectedFolder) rowRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [isSelectedFolder])
 
   const handleClick = (): void => {
     if (node.isDirectory) {
@@ -45,7 +50,9 @@ export default function FileTreeItem({ node, depth }: FileTreeItemProps): React.
     <div>
       <div
         role="treeitem"
-        aria-selected={isActive}
+        ref={rowRef}
+        aria-selected={isActive || isSelectedFolder}
+        aria-expanded={node.isDirectory ? isExpanded : undefined}
         tabIndex={0}
         onClick={handleClick}
         onKeyDown={(e) => e.key === 'Enter' && handleClick()}

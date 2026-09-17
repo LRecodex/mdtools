@@ -7,6 +7,7 @@ import { registerWindowHandlers, attachWindowStateEvents } from './ipc/window'
 import { registerSettingsHandlers } from './ipc/settings'
 import { registerWatcherHandlers } from './watcher'
 import { getSettings, updateSettings } from './settings'
+import { registerAutoUpdater } from './autoUpdate'
 
 const DEFAULT_WINDOW_WIDTH = 1280
 const DEFAULT_WINDOW_HEIGHT = 800
@@ -115,6 +116,7 @@ app.whenReady().then(() => {
   registerWindowHandlers()
   registerSettingsHandlers()
   registerWatcherHandlers()
+  registerAutoUpdater()
 
   createWindow()
 

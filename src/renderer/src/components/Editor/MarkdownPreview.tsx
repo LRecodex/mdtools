@@ -49,10 +49,13 @@ export async function renderMarkdownForExport(content: string, theme: 'light' | 
   }
 }
 
+import PreviewSearch from './PreviewSearch'
+
 export default function MarkdownPreview({ content }: MarkdownPreviewProps): React.JSX.Element {
   const html = useMemo(() => renderMarkdown(content), [content])
   const resolvedTheme = useAppStore((s) => s.resolvedTheme)
   const containerRef = useRef<HTMLDivElement>(null)
+  const editorMode = useAppStore((s) => s.editorMode)
 
   useEffect(() => {
     const container = containerRef.current
@@ -69,7 +72,9 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps): Reac
   }, [html, resolvedTheme])
 
   return (
-    <div className="text-select h-full min-h-0 flex-1 overflow-y-auto">
+    <div className="flex h-full min-h-0 flex-col">
+    <PreviewSearch container={containerRef} enabled={editorMode === 'preview'} theme={resolvedTheme} />
+    <div className="text-select min-h-0 flex-1 overflow-y-auto">
       <div
         key={resolvedTheme}
         ref={containerRef}
@@ -77,6 +82,7 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps): Reac
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: html }}
       />
+    </div>
     </div>
   )
 }

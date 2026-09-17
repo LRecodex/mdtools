@@ -1,8 +1,10 @@
 # MD Tools
 
-A fast, polished desktop app for browsing, viewing, and authoring Markdown files — with live preview and built-in Mermaid diagram rendering.
+A fast, polished desktop app for browsing, viewing, and authoring Markdown files — with live preview, built-in Mermaid diagram rendering, and automatic update checks in packaged builds.
 
-This is the **source repository** (private). For prebuilt installers, see
+Current app version: **v1.8.1**.
+
+This is the **source repository** (private). For the latest prebuilt Windows installer or portable build, see
 [LRecodex/mdtools-releases](https://github.com/LRecodex/mdtools-releases/releases/latest).
 
 ![MD Tools — Mermaid diagram rendered live in Preview mode](.github/assets/screenshot-mermaid.png)
@@ -56,7 +58,9 @@ src/
 | **Document templates** | Start quickly with 15 templates for meetings, projects, study, development, journals, checklists, and more |
 | **Resizable sidebar** | Drag the workspace navigation edge for long file names; double-click the edge to reset |
 | **Autosave** | Changes save automatically shortly after you stop typing, or instantly with `Ctrl+S` |
-| **Quick Open** | `Ctrl+P` fuzzy-searches every file in the workspace |
+| **Quick Open** | `Ctrl+P` searches file and folder names, paths, and text inside Markdown, text, JSON, code, and CSV files; content matches include a short excerpt |
+| **Support LRecodex** | Open the sidebar donation section to scan the included Maybank QR code |
+| **Find in document** | `Ctrl+F` searches Source, Split, or Preview; Source also supports replace, whole words, and regular expressions |
 | **Themes** | Light / dark / system, cycled with `Ctrl+,` |
 | **Built-in Help** | `Ctrl+/` opens an in-app cheat sheet for syntax, shortcuts, and Mermaid |
 
@@ -93,6 +97,9 @@ graph TD
 | `Ctrl+W` | Close current tab |
 | `Ctrl+Shift+W` | Close all tabs |
 | `Ctrl+P` | Quick Open |
+| `Ctrl+F` | Find in current document |
+| `F3` / `Shift+F3` | Next / previous match |
+| `Ctrl+H` | Find and replace (Source / Split) |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
 | `Ctrl+PageUp` / `Ctrl+PageDown` | Previous / next tab |
 | `Ctrl+Shift+B` | Show / hide sidebar |
@@ -108,3 +115,8 @@ and examples are shown in-app via `Ctrl+/` (`HelpDialog.tsx`).
 Tagged builds are published as installers to
 [LRecodex/mdtools-releases](https://github.com/LRecodex/mdtools-releases/releases/latest)
 (Setup + Portable, Windows x64, unsigned).
+
+Packaged builds use `electron-updater` with the GitHub Releases feed configured in
+`electron-builder.yml`. The app checks for updates shortly after startup, downloads available
+updates automatically, shows the native update notification, and installs the downloaded update
+when the app quits.

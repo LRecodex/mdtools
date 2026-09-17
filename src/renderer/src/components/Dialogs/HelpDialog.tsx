@@ -36,7 +36,7 @@ const FEATURES: { icon: typeof FolderOpen; title: string; description: string }[
   {
     icon: Search,
     title: 'Quick Open',
-    description: 'Press Ctrl+P to fuzzy-search and jump to any file in the workspace.'
+    description: 'Press Ctrl+P to search file and folder names, paths, or text inside Markdown, code, JSON, TXT, and CSV files.'
   },
   {
     icon: FolderOpen,
@@ -82,7 +82,10 @@ const SHORTCUTS: { keys: string; action: string }[] = [
   { keys: 'Ctrl+S', action: 'Save current file' },
   { keys: 'Ctrl+W', action: 'Close current tab' },
   { keys: 'Ctrl+Shift+W', action: 'Close all tabs' },
-  { keys: 'Ctrl+P', action: 'Quick Open' },
+  { keys: 'Ctrl+P', action: 'Quick Open workspace search' },
+  { keys: 'Ctrl+F', action: 'Find in the current document (Source, Split, or Preview)' },
+  { keys: 'F3 / Shift+F3', action: 'Next / previous search match' },
+  { keys: 'Ctrl+H', action: 'Find and replace in Source or Split mode' },
   { keys: 'Ctrl+Tab', action: 'Next tab' },
   { keys: 'Ctrl+Shift+Tab', action: 'Previous tab' },
   { keys: 'Ctrl+PageUp / PageDown', action: 'Previous / next tab' },

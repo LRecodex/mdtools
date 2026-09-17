@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { EditorSelection, StateEffect } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
+import { search, searchKeymap, openSearchPanel } from '@codemirror/search'
 import { markdown } from '@codemirror/lang-markdown'
 import { json } from '@codemirror/lang-json'
 import { bracketMatching, foldGutter, indentOnInput, LanguageDescription } from '@codemirror/language'
@@ -203,6 +204,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
         highlightActiveLine(),
         highlightActiveLineGutter(),
         history(),
+        search({ top: true }),
         ...(documentType === 'markdown'
           ? [markdown({ extensions: [GFM] })]
           : documentType === 'json'
@@ -241,6 +243,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
           indentWithTab,
           ...(documentType === 'code' ? [...closeBracketsKeymap, ...completionKeymap] : []),
           ...historyKeymap,
+          ...searchKeymap,
           ...defaultKeymap
         ]),
         EditorView.updateListener.of((update) => {
@@ -260,6 +263,8 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
     })
 
     viewRef.current = view
+    const find = (): void => { openSearchPanel(view) }
+    window.addEventListener('mdtools:find', find)
     if (documentType === 'code') {
       const language = LanguageDescription.matchFilename(languages, path)
       language?.load().then((support) => {
@@ -269,6 +274,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
       })
     }
     return () => {
+      window.removeEventListener('mdtools:find', find)
       view.destroy()
       viewRef.current = null
     }

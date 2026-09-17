@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { FolderOpen, FilePlus, FolderPlus, Clock, RotateCcw, ChevronsUp } from 'lucide-react'
+import { FolderOpen, FilePlus, FolderPlus, Clock, RotateCcw, ChevronsUp, Search, Heart } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { basename } from '../../lib/path'
 import IconButton from '../common/IconButton'
@@ -13,6 +13,8 @@ import {
   type ContextMenuState
 } from './treeUIContext'
 import type { FileNode } from '../../../../shared/types'
+import { APP_VERSION } from '../../../../shared/version'
+import DonationDialog from '../Dialogs/DonationDialog'
 
 export default function Sidebar(): React.JSX.Element {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot)
@@ -30,11 +32,13 @@ export default function Sidebar(): React.JSX.Element {
   const copiedPath = useAppStore((s) => s.copiedPath)
   const copyPath = useAppStore((s) => s.copyPath)
   const pastePath = useAppStore((s) => s.pastePath)
+  const setQuickOpenOpen = useAppStore((s) => s.setQuickOpenOpen)
 
   const [creating, setCreating] = useState<CreatingState | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<FileNode | null>(null)
+  const [donationOpen, setDonationOpen] = useState(false)
   const resizeStart = useRef<{ x: number; width: number } | null>(null)
 
   const handleOpenFolder = async (): Promise<void> => {
@@ -142,6 +146,9 @@ export default function Sidebar(): React.JSX.Element {
             {workspaceRoot ? basename(workspaceRoot) : 'Explorer'}
           </span>
           <div className="flex items-center gap-0.5">
+            <IconButton label="Search files and folders (Ctrl+P)" disabled={!workspaceRoot} onClick={() => setQuickOpenOpen(true)}>
+              <Search size={15} />
+            </IconButton>
             <IconButton
               label={`New File${createTarget ? ` in ${basename(createTarget)}` : ''}`}
               disabled={!workspaceRoot}
@@ -246,8 +253,16 @@ export default function Sidebar(): React.JSX.Element {
             </div>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => setDonationOpen(true)}
+          className="flex h-8 shrink-0 items-center gap-1.5 border-t border-(--color-border) px-2 text-left text-[11px] text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text)"
+        >
+          <Heart size={12} className="text-pink-500" />
+          <span>Support LRecodex</span>
+        </button>
         <div className="flex h-7 shrink-0 items-center justify-between gap-2 border-t border-(--color-border) px-2 text-[11px] text-(--color-text-muted)">
-          <span className="truncate">Current version: v1.6.0</span>
+          <span className="truncate">Current version: v{APP_VERSION}</span>
           <span className="shrink-0">Made by LRecodex</span>
         </div>
         <div
@@ -280,6 +295,7 @@ export default function Sidebar(): React.JSX.Element {
           onCancel={() => setConfirmDelete(null)}
         />
       )}
+      {donationOpen && <DonationDialog onClose={() => setDonationOpen(false)} />}
     </TreeUIContext.Provider>
   )
 }
