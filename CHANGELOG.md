@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.2 - 2026-09-17
+
+- Reworked packaged-app updates into a user-controlled status bar flow: check in the background, show an update button, download on request, then restart to install.
+
 ## 1.8.1 - 2026-09-17
 
 - Focused the Support LRecodex donation image on the scannable QR code and improved its dialog presentation.

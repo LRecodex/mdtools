@@ -88,6 +88,24 @@ export interface WatchEvent {
   path: string
 }
 
+export type UpdateStatusType =
+  | 'unsupported'
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+
+export interface UpdateStatus {
+  status: UpdateStatusType
+  currentVersion: string
+  availableVersion?: string
+  message?: string
+  percent?: number
+}
+
 export interface ExternalFileChange {
   path: string
 }

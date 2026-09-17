@@ -1,5 +1,5 @@
 import { clipboard, contextBridge, ipcRenderer, webUtils } from 'electron'
-import type { FileNode, OpenedDocument, SearchResult, Settings, WatchEvent } from '../shared/types'
+import type { FileNode, OpenedDocument, SearchResult, Settings, UpdateStatus, WatchEvent } from '../shared/types'
 
 const api = {
   fs: {
@@ -57,6 +57,18 @@ const api = {
         callback(payload)
       ipcRenderer.on('watcher:event', listener)
       return () => ipcRenderer.removeListener('watcher:event', listener)
+    }
+  },
+  update: {
+    getStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:getStatus'),
+    check: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:check'),
+    download: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:download'),
+    install: (): Promise<void> => ipcRenderer.invoke('update:install'),
+    onStatus: (callback: (status: UpdateStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: UpdateStatus): void =>
+        callback(payload)
+      ipcRenderer.on('update:status', listener)
+      return () => ipcRenderer.removeListener('update:status', listener)
     }
   }
 }

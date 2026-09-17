@@ -2,7 +2,7 @@
 
 A fast, polished desktop app for browsing, viewing, and authoring Markdown files — with live preview, built-in Mermaid diagram rendering, and automatic update checks in packaged builds.
 
-Current app version: **v1.8.1**.
+Current app version: **v1.8.2**.
 
 This is the **source repository** (private). For the latest prebuilt Windows installer or portable build, see
 [LRecodex/mdtools-releases](https://github.com/LRecodex/mdtools-releases/releases/latest).
@@ -61,6 +61,7 @@ src/
 | **Quick Open** | `Ctrl+P` searches file and folder names, paths, and text inside Markdown, text, JSON, code, and CSV files; content matches include a short excerpt |
 | **Support LRecodex** | Open the sidebar donation section to scan the included Maybank QR code |
 | **Find in document** | `Ctrl+F` searches Source, Split, or Preview; Source also supports replace, whole words, and regular expressions |
+| **User-controlled updates** | Packaged builds show update availability in the status bar, let you download when ready, then restart to install |
 | **Themes** | Light / dark / system, cycled with `Ctrl+,` |
 | **Built-in Help** | `Ctrl+/` opens an in-app cheat sheet for syntax, shortcuts, and Mermaid |
 
@@ -117,6 +118,6 @@ Tagged builds are published as installers to
 (Setup + Portable, Windows x64, unsigned).
 
 Packaged builds use `electron-updater` with the GitHub Releases feed configured in
-`electron-builder.yml`. The app checks for updates shortly after startup, downloads available
-updates automatically, shows the native update notification, and installs the downloaded update
-when the app quits.
+`electron-builder.yml`. The app checks for updates shortly after startup. When a newer release is
+available, a status bar action appears so the user can download it when ready. After the download
+finishes, the action changes to **Restart to update** and installs with `quitAndInstall()`.

@@ -1,5 +1,7 @@
-import { Sun, Moon, Monitor } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Sun, Moon, Monitor, Download, RefreshCw } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
+import type { UpdateStatus } from '../../../../shared/types'
 
 function countWords(text: string): number {
   const trimmed = text.trim()
@@ -23,11 +25,52 @@ export default function StatusBar(): React.JSX.Element {
 
   const activeTab = tabs.find((t) => t.path === activeTabPath)
   const ThemeIcon = THEME_ICON[theme]
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
 
   const cycleTheme = (): void => {
     const idx = THEME_CYCLE.indexOf(theme)
     setTheme(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length])
   }
+
+  useEffect(() => {
+    let mounted = true
+    void window.api.update.getStatus().then((status) => {
+      if (mounted) setUpdateStatus(status)
+    })
+    const unsubscribe = window.api.update.onStatus(setUpdateStatus)
+    return () => {
+      mounted = false
+      unsubscribe()
+    }
+  }, [])
+
+  const updateAction = useMemo(() => {
+    if (!updateStatus || updateStatus.status === 'unsupported' || updateStatus.status === 'idle') return null
+    if (updateStatus.status === 'checking') {
+      return { label: 'Checking for updates', text: 'Checking', disabled: true, icon: RefreshCw }
+    }
+    if (updateStatus.status === 'available') {
+      return { label: `Download MD Tools v${updateStatus.availableVersion}`, text: `Update v${updateStatus.availableVersion}`, disabled: false, icon: Download }
+    }
+    if (updateStatus.status === 'downloading') {
+      return { label: 'Downloading update', text: `Downloading ${updateStatus.percent ?? 0}%`, disabled: true, icon: Download }
+    }
+    if (updateStatus.status === 'downloaded') {
+      return { label: `Restart to install MD Tools v${updateStatus.availableVersion}`, text: 'Restart to update', disabled: false, icon: RefreshCw }
+    }
+    if (updateStatus.status === 'error') {
+      return { label: updateStatus.message ?? 'Update check failed', text: 'Update failed', disabled: false, icon: RefreshCw }
+    }
+    return null
+  }, [updateStatus])
+
+  const handleUpdateAction = (): void => {
+    if (!updateStatus) return
+    if (updateStatus.status === 'available') void window.api.update.download()
+    if (updateStatus.status === 'downloaded') void window.api.update.install()
+    if (updateStatus.status === 'error' || updateStatus.status === 'not-available') void window.api.update.check()
+  }
+  const UpdateIcon = updateAction?.icon
 
   return (
     <div className="status-bar flex h-7 min-w-0 shrink-0 items-center gap-3 border-t border-(--color-border) bg-(--color-titlebar) px-3 text-xs text-(--color-text-muted)">
@@ -55,6 +98,19 @@ export default function StatusBar(): React.JSX.Element {
               </span>
             )}
           </>
+        )}
+        {updateAction && (
+          <button
+            type="button"
+            aria-label={updateAction.label}
+            title={updateAction.label}
+            disabled={updateAction.disabled}
+            onClick={handleUpdateAction}
+            className="status-update flex max-w-36 items-center gap-1 truncate rounded px-1.5 py-0.5 text-(--color-accent) hover:bg-(--color-bg-inset) hover:text-(--color-text) disabled:cursor-default disabled:text-(--color-text-muted)"
+          >
+            {UpdateIcon && <UpdateIcon size={12} />}
+            <span className="truncate">{updateAction.text}</span>
+          </button>
         )}
         <button
           type="button"
