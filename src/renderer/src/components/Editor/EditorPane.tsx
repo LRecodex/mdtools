@@ -8,6 +8,7 @@ import MarkdownPreview, { renderMarkdownForExport } from './MarkdownPreview'
 import FormattingToolbar from './FormattingToolbar'
 import type { MarkdownEditorHandle } from './formatting'
 import DocumentViewer from './DocumentViewer'
+import DocumentInsights from './DocumentInsights'
 
 const AUTOSAVE_DELAY_MS = 800
 const MIN_SPLIT_RATIO = 0.15
@@ -32,6 +33,7 @@ export default function EditorPane(): React.JSX.Element {
   const [splitRatio, setSplitRatio] = useState(0.5)
   const [isDragging, setIsDragging] = useState(false)
   const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [isExportingHtml, setIsExportingHtml] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
 
   const handleExportPdf = async (): Promise<void> => {
@@ -46,6 +48,21 @@ export default function EditorPane(): React.JSX.Element {
       setExportError(caught instanceof Error ? caught.message : String(caught))
     } finally {
       setIsExportingPdf(false)
+    }
+  }
+
+  const handleExportHtml = async (): Promise<void> => {
+    if (!activeTab || activeTab.kind !== 'markdown' || isExportingHtml) return
+    setIsExportingHtml(true)
+    setExportError(null)
+    try {
+      const html = await renderMarkdownForExport(activeTab.content, resolvedTheme)
+      const title = activeTab.name.replace(/\.(md|markdown|mdx)$/i, '')
+      await window.api.dialog.exportMarkdownHtml(html, title, activeTab.name, resolvedTheme)
+    } catch (caught) {
+      setExportError(caught instanceof Error ? caught.message : String(caught))
+    } finally {
+      setIsExportingHtml(false)
     }
   }
 
@@ -157,6 +174,17 @@ export default function EditorPane(): React.JSX.Element {
               </button>
               <button
                 type="button"
+                disabled={isExportingHtml}
+                title="Export rendered preview as HTML"
+                aria-label="HTML"
+                onClick={handleExportHtml}
+                className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text) disabled:opacity-50"
+              >
+                <Download size={14} />
+                <span className="toolbar-label">{isExportingHtml ? 'Exporting…' : 'HTML'}</span>
+              </button>
+              <button
+                type="button"
                 title="Replace content from a template (Ctrl+Shift+T)"
                 aria-label="Templates"
                 onClick={() => setTemplateDialog({ mode: 'replace', path: activeTab.path })}
@@ -203,6 +231,7 @@ export default function EditorPane(): React.JSX.Element {
                 <MarkdownPreview content={activeTab.content} />
               </div>
             )}
+            <DocumentInsights tab={activeTab} />
           </div>
         </>
         )

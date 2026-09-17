@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import mermaid from 'mermaid'
 import { renderMarkdown } from '../../lib/markdown'
 import { useAppStore } from '../../store/useAppStore'
+import { basename, dirname, join } from '../../lib/path'
 
 interface MarkdownPreviewProps {
   content: string
@@ -56,6 +57,9 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps): Reac
   const resolvedTheme = useAppStore((s) => s.resolvedTheme)
   const containerRef = useRef<HTMLDivElement>(null)
   const editorMode = useAppStore((s) => s.editorMode)
+  const activeTabPath = useAppStore((s) => s.activeTabPath)
+  const openFile = useAppStore((s) => s.openFile)
+  const createFile = useAppStore((s) => s.createFile)
 
   useEffect(() => {
     const container = containerRef.current
@@ -71,6 +75,18 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps): Reac
     }
   }, [html, resolvedTheme])
 
+  const handleClick = async (event: React.MouseEvent): Promise<void> => {
+    const anchor = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#wiki:"]')
+    if (!anchor || !activeTabPath) return
+    event.preventDefault()
+    const name = decodeURIComponent(anchor.getAttribute('href')!.slice('#wiki:'.length))
+    const dir = dirname(activeTabPath)
+    const targetName = `${name.replace(/[<>:"/\\|?*]+/g, '-').trim()}.md`
+    const target = join(dir, targetName)
+    if (await window.api.fs.exists(target)) await openFile(target)
+    else await createFile(dir, basename(target), `# ${name}\n\n`)
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col">
     <PreviewSearch container={containerRef} enabled={editorMode === 'preview'} theme={resolvedTheme} />
@@ -79,6 +95,7 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps): Reac
         key={resolvedTheme}
         ref={containerRef}
         className="markdown-body mx-auto max-w-3xl px-10 py-8"
+        onClick={(event) => void handleClick(event)}
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: html }}
       />

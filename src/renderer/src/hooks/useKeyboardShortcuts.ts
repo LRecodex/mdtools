@@ -10,6 +10,12 @@ export function useKeyboardShortcuts(): void {
       if (!mod) return
       const state = useAppStore.getState()
 
+      if (e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        state.setCommandPaletteOpen(!state.commandPaletteOpen)
+        return
+      }
+
       if (e.key.toLowerCase() === 'f' && !e.shiftKey && state.activeTabPath && !state.quickOpenOpen && !state.helpOpen && !state.templateDialog) {
         e.preventDefault()
         e.stopPropagation()

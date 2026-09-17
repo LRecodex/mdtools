@@ -30,7 +30,9 @@ const api = {
       ipcRenderer.invoke('dialog:showItemInFolder', path),
     openExternal: (url: string): Promise<void> => ipcRenderer.invoke('dialog:openExternal', url),
     exportMarkdownPdf: (html: string, title: string, suggestedName: string, theme: 'light' | 'dark'): Promise<string | null> =>
-      ipcRenderer.invoke('dialog:exportMarkdownPdf', html, title, suggestedName, theme)
+      ipcRenderer.invoke('dialog:exportMarkdownPdf', html, title, suggestedName, theme),
+    exportMarkdownHtml: (html: string, title: string, suggestedName: string, theme: 'light' | 'dark'): Promise<string | null> =>
+      ipcRenderer.invoke('dialog:exportMarkdownHtml', html, title, suggestedName, theme)
   },
   win: {
     minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),

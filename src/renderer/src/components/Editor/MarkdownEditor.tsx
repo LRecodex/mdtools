@@ -264,7 +264,18 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
 
     viewRef.current = view
     const find = (): void => { openSearchPanel(view) }
+    const gotoLine = (event: Event): void => {
+      const lineNumber = (event as CustomEvent<number>).detail
+      if (typeof lineNumber !== 'number') return
+      const line = view.state.doc.line(Math.max(1, Math.min(lineNumber, view.state.doc.lines)))
+      view.dispatch({
+        selection: EditorSelection.cursor(line.from),
+        effects: EditorView.scrollIntoView(line.from, { y: 'center' })
+      })
+      view.focus()
+    }
     window.addEventListener('mdtools:find', find)
+    window.addEventListener('mdtools:goto-line', gotoLine)
     if (documentType === 'code') {
       const language = LanguageDescription.matchFilename(languages, path)
       language?.load().then((support) => {
@@ -275,6 +286,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
     }
     return () => {
       window.removeEventListener('mdtools:find', find)
+      window.removeEventListener('mdtools:goto-line', gotoLine)
       view.destroy()
       viewRef.current = null
     }

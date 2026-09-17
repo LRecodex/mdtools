@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.9.0 - 2026-09-17
+
+- Added a command palette with workspace, search, settings, update, theme, and help commands.
+- Reworked the empty state into a welcome dashboard with recent workspaces and quick actions.
+- Added a Markdown insights panel with document outline, wiki links, and backlinks.
+- Added `[[Page Name]]` wiki links that open existing Markdown pages or create new ones.
+- Added rendered Markdown export to standalone HTML alongside PDF.
+- Added a Settings dialog for theme, editor mode, sidebar layout, and update status.
+- Added an update dialog with latest release notes and explicit Download / Restart actions.
+
 ## 1.8.2 - 2026-09-17
 
 - Reworked packaged-app updates into a user-controlled status bar flow: check in the background, show an update button, download on request, then restart to install.

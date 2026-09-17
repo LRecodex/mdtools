@@ -9,6 +9,9 @@ import QuickOpen from './components/QuickOpen/QuickOpen'
 import UnsavedChangesDialog from './components/Dialogs/UnsavedChangesDialog'
 import HelpDialog from './components/Dialogs/HelpDialog'
 import TemplateDialog from './components/Dialogs/TemplateDialog'
+import SettingsDialog from './components/Dialogs/SettingsDialog'
+import UpdateDialog from './components/Dialogs/UpdateDialog'
+import CommandPalette from './components/CommandPalette/CommandPalette'
 import EmptyState from './components/EmptyState/EmptyState'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { documentKind } from '../../shared/types'
@@ -112,9 +115,12 @@ export default function App(): React.JSX.Element {
         )}
       </div>
       <QuickOpen />
+      <CommandPalette />
       <UnsavedChangesDialog />
       <HelpDialog />
       <TemplateDialog />
+      <SettingsDialog />
+      <UpdateDialog />
       {isFileDragActive && (
         <div className="pointer-events-none fixed inset-3 z-50 flex items-center justify-center rounded-xl border-2 border-dashed border-(--color-accent) bg-(--color-bg)/90">
           <div className="flex flex-col items-center gap-3 rounded-xl bg-(--color-bg-elevated) px-8 py-6 text-center shadow-xl">

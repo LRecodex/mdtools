@@ -86,4 +86,20 @@ export function registerDialogHandlers(): void {
       if (!printWindow.isDestroyed()) printWindow.destroy()
     }
   })
+
+  ipcMain.handle('dialog:exportMarkdownHtml', async (event, html: string, title: string, suggestedName: string, theme: 'light' | 'dark') => {
+    const parent = BrowserWindow.fromWebContents(event.sender)
+    if (!parent) return null
+    const defaultName = suggestedName.replace(/\.(md|markdown|mdx)$/i, '') + '.html'
+    const result = await dialog.showSaveDialog(parent, {
+      title: 'Export Markdown preview as HTML',
+      defaultPath: defaultName,
+      filters: [{ name: 'HTML document', extensions: ['html', 'htm'] }]
+    })
+    if (result.canceled || !result.filePath) return null
+
+    const document = pdfDocument(html, title, theme)
+    await fs.writeFile(result.filePath, document, 'utf8')
+    return result.filePath
+  })
 }

@@ -79,8 +79,16 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   }
 })
 
+function renderWikiLinks(source: string): string {
+  return source.replace(/\[\[([^\]\n]+)\]\]/g, (_match, rawName: string) => {
+    const name = rawName.trim()
+    if (!name) return rawName
+    return `[${name}](#wiki:${encodeURIComponent(name)})`
+  })
+}
+
 export function renderMarkdown(source: string): string {
-  return DOMPurify.sanitize(md.render(source), {
+  return DOMPurify.sanitize(md.render(renderWikiLinks(source)), {
     USE_PROFILES: { html: true },
     FORBID_ATTR: ['style'],
     FORBID_TAGS: ['form', 'button', 'textarea', 'select', 'option', 'iframe', 'object', 'embed']

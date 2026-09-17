@@ -36,6 +36,9 @@ interface AppState {
   sidebarWidth: number
   recentWorkspaces: string[]
   quickOpenOpen: boolean
+  commandPaletteOpen: boolean
+  settingsOpen: boolean
+  updateDialogOpen: boolean
   helpOpen: boolean
   templateDialog: TemplateDialogState | null
   pendingCloseTab: string | null
@@ -73,6 +76,9 @@ interface AppState {
   toggleSidebar: () => void
   setSidebarWidth: (width: number) => void
   setQuickOpenOpen: (open: boolean) => void
+  setCommandPaletteOpen: (open: boolean) => void
+  setSettingsOpen: (open: boolean) => void
+  setUpdateDialogOpen: (open: boolean) => void
   setHelpOpen: (open: boolean) => void
   setTemplateDialog: (dialog: TemplateDialogState | null) => void
   handleWatchEvent: (event: WatchEvent) => void
@@ -122,6 +128,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   sidebarWidth: 256,
   recentWorkspaces: [],
   quickOpenOpen: false,
+  commandPaletteOpen: false,
+  settingsOpen: false,
+  updateDialogOpen: false,
   helpOpen: false,
   templateDialog: null,
   pendingCloseTab: null,
@@ -433,6 +442,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),
+  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+  setSettingsOpen: (open) => set({ settingsOpen: open }),
+  setUpdateDialogOpen: (open) => set({ updateDialogOpen: open }),
 
   setHelpOpen: (open) => set({ helpOpen: open }),
 

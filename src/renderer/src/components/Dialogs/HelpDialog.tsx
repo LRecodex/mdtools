@@ -39,6 +39,11 @@ const FEATURES: { icon: typeof FolderOpen; title: string; description: string }[
     description: 'Press Ctrl+P to search file and folder names, paths, or text inside Markdown, code, JSON, TXT, and CSV files.'
   },
   {
+    icon: Search,
+    title: 'Command palette',
+    description: 'Press Ctrl+Shift+P for commands, settings, update status, help, and theme changes.'
+  },
+  {
     icon: FolderOpen,
     title: 'Resizable sidebar',
     description: 'Drag the explorer edge when long file names need more room; double-click the edge to reset it.'
@@ -83,6 +88,7 @@ const SHORTCUTS: { keys: string; action: string }[] = [
   { keys: 'Ctrl+W', action: 'Close current tab' },
   { keys: 'Ctrl+Shift+W', action: 'Close all tabs' },
   { keys: 'Ctrl+P', action: 'Quick Open workspace search' },
+  { keys: 'Ctrl+Shift+P', action: 'Command Palette' },
   { keys: 'Ctrl+F', action: 'Find in the current document (Source, Split, or Preview)' },
   { keys: 'F3 / Shift+F3', action: 'Next / previous search match' },
   { keys: 'Ctrl+H', action: 'Find and replace in Source or Split mode' },

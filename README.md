@@ -2,7 +2,7 @@
 
 A fast, polished desktop app for browsing, viewing, and authoring Markdown files — with live preview, built-in Mermaid diagram rendering, and automatic update checks in packaged builds.
 
-Current app version: **v1.8.2**.
+Current app version: **v1.9.0**.
 
 This is the **source repository** (private). For the latest prebuilt Windows installer or portable build, see
 [LRecodex/mdtools-releases](https://github.com/LRecodex/mdtools-releases/releases/latest).
@@ -61,6 +61,12 @@ src/
 | **Quick Open** | `Ctrl+P` searches file and folder names, paths, and text inside Markdown, text, JSON, code, and CSV files; content matches include a short excerpt |
 | **Support LRecodex** | Open the sidebar donation section to scan the included Maybank QR code |
 | **Find in document** | `Ctrl+F` searches Source, Split, or Preview; Source also supports replace, whole words, and regular expressions |
+| **Command palette** | `Ctrl+Shift+P` opens workspace, search, settings, updates, help, and theme commands |
+| **Welcome dashboard** | Start from recent workspaces, settings, or a new folder when no workspace is open |
+| **Outline + backlinks** | Markdown files show headings, wiki links, and backlinks in a side panel on wide screens |
+| **Wiki links** | Use `[[Page Name]]` to open or create related Markdown pages |
+| **HTML export** | Export rendered Markdown previews as PDF or standalone HTML |
+| **Settings dialog** | Adjust theme, default editor mode, sidebar visibility, sidebar width, and update status |
 | **User-controlled updates** | Packaged builds show update availability in the status bar, let you download when ready, then restart to install |
 | **Themes** | Light / dark / system, cycled with `Ctrl+,` |
 | **Built-in Help** | `Ctrl+/` opens an in-app cheat sheet for syntax, shortcuts, and Mermaid |
@@ -98,6 +104,7 @@ graph TD
 | `Ctrl+W` | Close current tab |
 | `Ctrl+Shift+W` | Close all tabs |
 | `Ctrl+P` | Quick Open |
+| `Ctrl+Shift+P` | Command Palette |
 | `Ctrl+F` | Find in current document |
 | `F3` / `Shift+F3` | Next / previous match |
 | `Ctrl+H` | Find and replace (Source / Split) |

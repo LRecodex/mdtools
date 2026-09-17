@@ -22,6 +22,7 @@ export default function StatusBar(): React.JSX.Element {
   const cursorPosition = useAppStore((s) => s.cursorPosition)
   const theme = useAppStore((s) => s.theme)
   const setTheme = useAppStore((s) => s.setTheme)
+  const setUpdateDialogOpen = useAppStore((s) => s.setUpdateDialogOpen)
 
   const activeTab = tabs.find((t) => t.path === activeTabPath)
   const ThemeIcon = THEME_ICON[theme]
@@ -65,10 +66,7 @@ export default function StatusBar(): React.JSX.Element {
   }, [updateStatus])
 
   const handleUpdateAction = (): void => {
-    if (!updateStatus) return
-    if (updateStatus.status === 'available') void window.api.update.download()
-    if (updateStatus.status === 'downloaded') void window.api.update.install()
-    if (updateStatus.status === 'error' || updateStatus.status === 'not-available') void window.api.update.check()
+    setUpdateDialogOpen(true)
   }
   const UpdateIcon = updateAction?.icon
 
