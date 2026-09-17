@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.1 - 2026-09-17
+
+- Added a top toolbar Wiki link button that inserts `[[Page name]]` with the page name selected for easy replacement.
+- Added a Wiki link chooser for selecting existing Markdown pages instead of typing link targets manually.
+- Fixed a CodeMirror selection update used when syncing external document changes.
+
 ## 1.9.0 - 2026-09-17
 
 - Added a command palette with workspace, search, settings, update, theme, and help commands.

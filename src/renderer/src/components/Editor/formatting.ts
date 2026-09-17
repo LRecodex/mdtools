@@ -33,6 +33,7 @@ export type MarkdownFormat =
   | 'strikethrough'
   | 'inlineCode'
   | 'link'
+  | 'wikiLink'
   | 'image'
   | 'quote'
   | 'bulletList'
@@ -42,6 +43,7 @@ export type MarkdownFormat =
   | 'horizontalRule'
   | `codeBlock:${CodeBlockLanguage}`
   | `mermaid:${MermaidDiagramType}`
+  | `wikiLink:${string}`
 
 export interface MarkdownEditorHandle {
   applyFormat: (format: MarkdownFormat) => void

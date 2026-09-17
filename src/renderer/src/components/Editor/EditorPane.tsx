@@ -154,7 +154,7 @@ export default function EditorPane(): React.JSX.Element {
         <>
           <div className="flex h-10 shrink-0 items-center justify-between border-b border-(--color-border) px-2">
             {editorMode !== 'preview' ? (
-              <FormattingToolbar onFormat={(format) => editorRef.current?.applyFormat(format)} />
+              <FormattingToolbar workspaceRoot={workspaceRoot} onFormat={(format) => editorRef.current?.applyFormat(format)} />
             ) : (
               <span className="toolbar-label min-w-0 flex-1 truncate px-1 text-xs text-(--color-text-muted)">Preview</span>
             )}

@@ -149,6 +149,12 @@ function applyMarkdownFormat(view: EditorView, format: MarkdownFormat): void {
     return
   }
 
+  if (format.startsWith('wikiLink:')) {
+    const name = format.slice('wikiLink:'.length).trim() || selected || 'Page name'
+    replace(`[[${name}]]`, 2, 2 + name.length)
+    return
+  }
+
   switch (format) {
     case 'bold': wrap('**', '**', 'bold text'); break
     case 'italic': wrap('*', '*', 'italic text'); break
@@ -157,6 +163,11 @@ function applyMarkdownFormat(view: EditorView, format: MarkdownFormat): void {
     case 'link': {
       const label = selected || 'link text'
       replace(`[${label}](https://example.com)`, 1, 1 + label.length)
+      break
+    }
+    case 'wikiLink': {
+      const name = selected || 'Page name'
+      replace(`[[${name}]]`, 2, 2 + name.length)
       break
     }
     case 'image': replace('![alt text](image.png)', 2, 10); break
@@ -302,7 +313,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(fun
         const cursor = Math.min(view.state.selection.main.head, value.length)
         view.dispatch({
           changes: { from: 0, to: currentDoc.length, insert: value },
-          selection: { anchor: cursor }
+          selection: EditorSelection.cursor(cursor)
         })
       }
       lastEmitted.current = value
