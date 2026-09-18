@@ -2,7 +2,7 @@
 
 A fast, polished desktop app for browsing, viewing, and authoring Markdown files — with live preview, built-in Mermaid diagram rendering, and automatic update checks in packaged builds.
 
-Current app version: **v1.11.0**.
+Current app version: **v1.11.1**.
 
 This is the **source repository** (private). For the latest prebuilt Windows installer or portable build, see
 [LRecodex/mdtools-releases](https://github.com/LRecodex/mdtools-releases/releases/latest).

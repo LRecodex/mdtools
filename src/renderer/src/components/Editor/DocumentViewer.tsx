@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, LockKeyhole, Maximize2, Search, ZoomIn, ZoomOut } from 'lucide-react'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
@@ -143,6 +143,21 @@ function FormulaText({ formula, references }: { formula: string, references: For
   return <>{parts}</>
 }
 
+function readableTextColor(background?: string, color?: string): string | undefined {
+  if (!background || !/^#[\da-f]{6}$/i.test(background)) return color
+  const channels = [background.slice(1, 3), background.slice(3, 5), background.slice(5, 7)].map((part) => Number.parseInt(part, 16) / 255)
+  const luminance = channels.map((value) => value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4).reduce((total, value, index) => total + value * [0.2126, 0.7152, 0.0722][index], 0)
+  const isLightBackground = luminance > 0.45
+  if (isLightBackground && (!color || /^#(?:fff|ffffff)$/i.test(color))) return '#1f2937'
+  if (!isLightBackground && color && /^#(?:000|000000)$/i.test(color)) return '#f8fafc'
+  return color
+}
+
+function columnWidth(width?: number): number {
+  // Excel's character widths can become impractically wide in a compact app pane.
+  return Math.max(36, Math.min(280, Math.round((width ?? 14) * 6.5 + 8)))
+}
+
 function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
   const sheets = tab.sheets ?? []
   const [selected, setSelected] = useState(() => Math.max(0, sheets.findIndex((sheet) => !sheet.hidden)))
@@ -150,6 +165,7 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
   const [zoom, setZoom] = useState(() => sheets.find((sheet) => !sheet.hidden)?.zoom ?? 100)
   const [jumpAddress, setJumpAddress] = useState('')
   const [showHidden, setShowHidden] = useState(false)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const sheet = sheets[selected]
   const selectedCell = sheet?.rows.flat().find((cell) => cell.address === selectedAddress)
   const references = useMemo(() => selectedCell?.formula ? formulaReferences(selectedCell.formula) : [], [selectedCell?.formula])
@@ -173,6 +189,12 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
     document.getElementById(`spreadsheet-cell-${selectedAddress}`)?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })
   }, [selectedAddress])
 
+  const onViewportWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (!event.ctrlKey) return
+    event.preventDefault()
+    setZoom((value) => Math.max(50, Math.min(200, value - event.deltaY * 0.08)))
+  }
+
   const visibleSheets = sheets.map((item, index) => ({ item, index })).filter(({ item }) => showHidden || !item.hidden)
   const mergeAt = (row: number, column: number): SpreadsheetMerge | undefined => sheet?.merges.find((merge) => merge.top === row && merge.left === column)
   const insideMerge = (row: number, column: number): boolean => Boolean(sheet?.merges.some((merge) => row >= merge.top && row <= merge.bottom && column >= merge.left && column <= merge.right && (merge.top !== row || merge.left !== column)))
@@ -183,6 +205,8 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
   const frozenLabel = sheet && (sheet.frozenRows || sheet.frozenColumns)
     ? `Frozen: ${sheet.frozenRows ? `${sheet.frozenRows} row${sheet.frozenRows === 1 ? '' : 's'}` : ''}${sheet.frozenRows && sheet.frozenColumns ? ' · ' : ''}${sheet.frozenColumns ? `${sheet.frozenColumns} column${sheet.frozenColumns === 1 ? '' : 's'}` : ''}`
     : 'No frozen panes'
+  const frozenTop = (rowIndex: number): number => 37 + (sheet?.rowMeta.slice(0, rowIndex).reduce((total, row) => total + (row.hidden ? 0 : row.height ?? 36), 0) ?? 0)
+  const frozenLeft = (columnIndex: number): number => 40 + (sheet?.columns.slice(0, columnIndex).reduce((total, column) => total + (column.hidden ? 0 : columnWidth(column.width)), 0) ?? 0)
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -202,10 +226,10 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
           <Search size={13} />
           <input id="spreadsheet-go-to" aria-label="Go to spreadsheet cell" value={jumpAddress} onChange={(event) => setJumpAddress(event.target.value)} placeholder="Go to cell, e.g. H67" className="w-36 rounded border border-(--color-border) bg-(--color-bg-inset) px-2 py-1 font-mono text-(--color-text) outline-none focus:border-(--color-accent)" />
         </form>
-        <div className="ml-auto flex items-center gap-1" aria-label="Spreadsheet zoom controls">
-          <button type="button" aria-label="Zoom out" onClick={() => setZoom((value) => Math.max(50, value - 10))} className="rounded p-1 hover:bg-(--color-bg-inset)"><ZoomOut size={15} /></button>
-          <button type="button" aria-label="Reset spreadsheet zoom" onClick={() => setZoom(sheet?.zoom ?? 100)} className="min-w-12 rounded px-1 py-1 hover:bg-(--color-bg-inset)">{zoom}%</button>
-          <button type="button" aria-label="Zoom in" onClick={() => setZoom((value) => Math.min(200, value + 10))} className="rounded p-1 hover:bg-(--color-bg-inset)"><ZoomIn size={15} /></button>
+        <div className="ml-auto flex items-center gap-1" aria-label="Spreadsheet zoom controls" title="Hold Ctrl and use the mouse wheel to zoom">
+          <button type="button" aria-label="Zoom out" onClick={() => setZoom((value) => Math.max(50, value - 5))} className="rounded p-1 hover:bg-(--color-bg-inset)"><ZoomOut size={15} /></button>
+          <button type="button" aria-label="Reset spreadsheet zoom" onClick={() => setZoom(sheet?.zoom ?? 100)} className="min-w-12 rounded px-1 py-1 hover:bg-(--color-bg-inset)">{Math.round(zoom)}%</button>
+          <button type="button" aria-label="Zoom in" onClick={() => setZoom((value) => Math.min(200, value + 5))} className="rounded p-1 hover:bg-(--color-bg-inset)"><ZoomIn size={15} /></button>
           <button type="button" aria-label="Fit spreadsheet width" onClick={() => setZoom(80)} className="rounded p-1 hover:bg-(--color-bg-inset)" title="Compact view"><Maximize2 size={15} /></button>
         </div>
       </div>
@@ -222,19 +246,19 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
           </div>
         ) : <p className="text-(--color-text-muted)">Select a cell to inspect its value. Formula cells reveal their calculation and color-code referenced cells.</p>}
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div ref={viewportRef} onWheel={onViewportWheel} className="min-h-0 flex-1 overflow-auto" title="Hold Ctrl and use the mouse wheel to zoom">
         {sheet ? (
           <table className="border-separate border-spacing-0 text-left text-xs" style={{ zoom: `${zoom}%` }}>
             <thead>
               <tr>
                 <th className="sticky top-0 left-0 z-30 min-w-10 border-b border-r border-(--color-border) bg-(--color-bg-elevated)" />
-                {sheet.rows[0]?.map((_, columnIndex) => !sheet.columns[columnIndex]?.hidden && <th key={columnIndex} className="sticky top-0 z-20 border-b border-r border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-center font-mono font-medium text-(--color-text-muted)" style={{ minWidth: `${Math.max(56, (sheet.columns[columnIndex]?.width ?? 14) * 7)}px` }}>{columnLabel(columnIndex)}</th>)}
+                {sheet.rows[0]?.map((_, columnIndex) => !sheet.columns[columnIndex]?.hidden && <th key={columnIndex} className={`sticky top-0 border-b border-r border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-center font-mono font-medium text-(--color-text-muted) ${columnIndex < sheet.frozenColumns ? 'z-30' : 'z-20'}`} style={{ minWidth: `${columnWidth(sheet.columns[columnIndex]?.width)}px`, ...(columnIndex < sheet.frozenColumns ? { left: `${frozenLeft(columnIndex)}px` } : {}) }}>{columnLabel(columnIndex)}</th>)}
               </tr>
             </thead>
             <tbody>
               {sheet.rows.map((row, rowIndex) => !sheet.rowMeta[rowIndex]?.hidden && (
                 <tr key={rowIndex} style={{ height: sheet.rowMeta[rowIndex]?.height ? `${sheet.rowMeta[rowIndex].height}px` : undefined }}>
-                  <th className="sticky left-0 z-10 min-w-10 border-b border-r border-(--color-border) bg-(--color-bg-elevated) px-2 text-right font-mono font-medium text-(--color-text-muted)">{rowIndex + 1}</th>
+                  <th className={`sticky left-0 min-w-10 border-b border-r border-(--color-border) bg-(--color-bg-elevated) px-2 text-right font-mono font-medium text-(--color-text-muted) ${rowIndex < (sheet.frozenRows ?? 0) ? 'z-30' : 'z-10'}`} style={rowIndex < sheet.frozenRows ? { top: `${frozenTop(rowIndex)}px` } : undefined}>{rowIndex + 1}</th>
                   {row.map((cell: SpreadsheetCell, columnIndex) => {
                     const rowNumber = rowIndex + 1
                     const columnNumber = columnIndex + 1
@@ -242,8 +266,11 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
                     const merge = mergeAt(rowNumber, columnNumber)
                     const highlight = highlightedCells.get(cell.address)
                     const isSelected = cell.address === selectedAddress
-                    const style = { backgroundColor: cell.style?.background, color: cell.style?.color, fontWeight: cell.style?.bold ? 700 : undefined, fontStyle: cell.style?.italic ? 'italic' : undefined, textAlign: cell.style?.horizontal, verticalAlign: cell.style?.vertical, whiteSpace: cell.style?.wrapText ? 'pre-wrap' : 'nowrap' } as React.CSSProperties
-                    return <td key={cell.address} colSpan={merge ? merge.right - merge.left + 1 : undefined} rowSpan={merge ? merge.bottom - merge.top + 1 : undefined} className="border-b border-r border-(--color-border) p-0">
+                    const isFrozen = rowIndex < sheet.frozenRows
+                    const style = { backgroundColor: cell.style?.background, color: readableTextColor(cell.style?.background, cell.style?.color), fontWeight: cell.style?.bold ? 700 : undefined, fontStyle: cell.style?.italic ? 'italic' : undefined, textAlign: cell.style?.horizontal, verticalAlign: cell.style?.vertical, whiteSpace: cell.style?.wrapText ? 'pre-wrap' : 'nowrap' } as React.CSSProperties
+                    const isFrozenColumn = columnIndex < sheet.frozenColumns
+                    const frozenStyle = { ...(isFrozen ? { top: `${frozenTop(rowIndex)}px` } : {}), ...(isFrozenColumn ? { left: `${frozenLeft(columnIndex)}px` } : {}) }
+                    return <td key={cell.address} colSpan={merge ? merge.right - merge.left + 1 : undefined} rowSpan={merge ? merge.bottom - merge.top + 1 : undefined} className={`border-b border-r border-(--color-border) p-0 ${(isFrozen || isFrozenColumn) ? `sticky ${isFrozen && isFrozenColumn ? 'z-30' : 'z-20'}` : ''}`} style={(isFrozen || isFrozenColumn) ? frozenStyle : undefined}>
                       <button
                         id={`spreadsheet-cell-${cell.address}`}
                         type="button"

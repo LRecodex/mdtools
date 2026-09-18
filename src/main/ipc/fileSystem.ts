@@ -23,14 +23,21 @@ function imageMime(path: string): string {
 
 function cellText(value: ExcelJS.CellValue): string {
   if (value == null) return ''
-  if (value instanceof Date) return value.toLocaleString()
+  if (value instanceof Date) return value.toLocaleDateString('en-GB')
   if (typeof value !== 'object') return String(value)
   const record = value as unknown as Record<string, unknown>
+  if (record.result instanceof Date) return record.result.toLocaleDateString('en-GB')
   if (record.result != null) return String(record.result)
   if (Array.isArray(record.richText)) return (record.richText as Array<{ text: string }>).map((part) => part.text).join('')
   if (record.text != null) return String(record.text)
   if (record.hyperlink != null) return String(record.hyperlink)
   return JSON.stringify(value)
+}
+
+function cellDisplay(cell: ExcelJS.Cell): string {
+  // ExcelJS uses the cell's number format for text, which prevents long binary
+  // decimals and verbose Date.toString() output from spilling across the grid.
+  return cell.text || cellText(cell.value)
 }
 
 function cellFormula(cell: ExcelJS.Cell): string | undefined {
@@ -103,7 +110,7 @@ async function openDocument(path: string): Promise<OpenedDocument> {
       const row: SpreadsheetData['rows'][number] = []
       for (let column = 1; column <= maxColumns; column += 1) {
         const cell = sheet.getCell(rowNumber, column)
-        row.push({ address: cell.address, value: cellText(cell.value), formula: cellFormula(cell), style: cellStyle(cell), locked: cell.protection?.locked })
+        row.push({ address: cell.address, value: cellDisplay(cell), formula: cellFormula(cell), style: cellStyle(cell), locked: cell.protection?.locked })
       }
       rows.push(row)
     }

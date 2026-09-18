@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.1 - 2026-09-18
+
+- Fixed Excel preview contrast so text remains readable on bright spreadsheet fills.
+- Used Excel-formatted dates and numbers to prevent raw values from overflowing cells.
+- Constrained excessively wide columns for a compact preview while preserving the sheet structure.
+- Frozen rows and columns now stay visible while scrolling. Zoom controls use finer steps and support Ctrl + mouse wheel.
+
 ## 1.11.0 - 2026-09-18
 
 - Excel previews now retain workbook formatting, merged cells, row heights, column widths, and hidden rows and columns.
