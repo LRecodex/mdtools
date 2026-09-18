@@ -31,12 +31,52 @@ export interface SpreadsheetCell {
   value: string
   /** The underlying Excel expression, without a leading equals sign. */
   formula?: string
+  /** Presentation details retained from the workbook for a readable preview. */
+  style?: SpreadsheetCellStyle
+  /** True when Excel marks this cell as locked. It only prevents editing on protected sheets. */
+  locked?: boolean
+}
+
+export interface SpreadsheetCellStyle {
+  background?: string
+  color?: string
+  bold?: boolean
+  italic?: boolean
+  horizontal?: 'left' | 'center' | 'right'
+  vertical?: 'top' | 'middle' | 'bottom'
+  wrapText?: boolean
+}
+
+export interface SpreadsheetColumn {
+  width?: number
+  hidden?: boolean
+}
+
+export interface SpreadsheetRow {
+  height?: number
+  hidden?: boolean
+}
+
+export interface SpreadsheetMerge {
+  top: number
+  left: number
+  bottom: number
+  right: number
 }
 
 export interface SpreadsheetData {
   name: string
   rows: SpreadsheetCell[][]
   truncated: boolean
+  columns: SpreadsheetColumn[]
+  rowMeta: SpreadsheetRow[]
+  merges: SpreadsheetMerge[]
+  frozenRows: number
+  frozenColumns: number
+  zoom: number
+  activeCell?: string
+  hidden?: boolean
+  protected?: boolean
 }
 
 export interface OpenedDocument {

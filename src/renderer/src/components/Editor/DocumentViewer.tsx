@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, LockKeyhole, Maximize2, Search, ZoomIn, ZoomOut } from 'lucide-react'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
-import type { SpreadsheetCell } from '../../../../shared/types'
+import type { SpreadsheetCell, SpreadsheetMerge } from '../../../../shared/types'
 import type { Tab } from '../../store/useAppStore'
 
 function parseCsv(source: string): string[][] {
@@ -145,8 +145,11 @@ function FormulaText({ formula, references }: { formula: string, references: For
 
 function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
   const sheets = tab.sheets ?? []
-  const [selected, setSelected] = useState(0)
+  const [selected, setSelected] = useState(() => Math.max(0, sheets.findIndex((sheet) => !sheet.hidden)))
   const [selectedAddress, setSelectedAddress] = useState<string | undefined>()
+  const [zoom, setZoom] = useState(() => sheets.find((sheet) => !sheet.hidden)?.zoom ?? 100)
+  const [jumpAddress, setJumpAddress] = useState('')
+  const [showHidden, setShowHidden] = useState(false)
   const sheet = sheets[selected]
   const selectedCell = sheet?.rows.flat().find((cell) => cell.address === selectedAddress)
   const references = useMemo(() => selectedCell?.formula ? formulaReferences(selectedCell.formula) : [], [selectedCell?.formula])
@@ -160,17 +163,51 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
   }, [references])
 
   useEffect(() => {
-    setSelectedAddress(undefined)
+    setSelectedAddress(sheet?.activeCell)
+    setJumpAddress('')
+    setZoom(sheet?.zoom ?? 100)
   }, [selected])
+
+  useEffect(() => {
+    if (!selectedAddress) return
+    document.getElementById(`spreadsheet-cell-${selectedAddress}`)?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })
+  }, [selectedAddress])
+
+  const visibleSheets = sheets.map((item, index) => ({ item, index })).filter(({ item }) => showHidden || !item.hidden)
+  const mergeAt = (row: number, column: number): SpreadsheetMerge | undefined => sheet?.merges.find((merge) => merge.top === row && merge.left === column)
+  const insideMerge = (row: number, column: number): boolean => Boolean(sheet?.merges.some((merge) => row >= merge.top && row <= merge.bottom && column >= merge.left && column <= merge.right && (merge.top !== row || merge.left !== column)))
+  const goToCell = () => {
+    const address = jumpAddress.trim().replaceAll('$', '').toUpperCase()
+    if (sheet?.rows.flat().some((cell) => cell.address === address)) setSelectedAddress(address)
+  }
+  const frozenLabel = sheet && (sheet.frozenRows || sheet.frozenColumns)
+    ? `Frozen: ${sheet.frozenRows ? `${sheet.frozenRows} row${sheet.frozenRows === 1 ? '' : 's'}` : ''}${sheet.frozenRows && sheet.frozenColumns ? ' · ' : ''}${sheet.frozenColumns ? `${sheet.frozenColumns} column${sheet.frozenColumns === 1 ? '' : 's'}` : ''}`
+    : 'No frozen panes'
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-9 shrink-0 items-center gap-1 overflow-x-auto border-b border-(--color-border) bg-(--color-bg-elevated) px-2">
-        {sheets.map((item, index) => (
+        {visibleSheets.map(({ item, index }) => (
           <button key={item.name} type="button" onClick={() => setSelected(index)} className={`rounded px-2 py-1 text-xs ${index === selected ? 'bg-(--color-accent) text-(--color-accent-fg)' : 'text-(--color-text-muted) hover:bg-(--color-bg-inset)'}`}>
-          {item.name}
-        </button>
-      ))}
+          {item.name}{item.hidden && ' (hidden)'}
+          </button>
+        ))}
+        {sheets.some((item) => item.hidden) && <button type="button" onClick={() => setShowHidden((value) => !value)} className="ml-auto whitespace-nowrap rounded px-2 py-1 text-xs text-(--color-text-muted) hover:bg-(--color-bg-inset)">{showHidden ? 'Hide hidden sheets' : 'Show hidden sheets'}</button>}
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-(--color-border) bg-(--color-bg) px-3 py-1.5 text-xs text-(--color-text-muted)">
+        <span title="Saved Excel freeze-pane settings"><LockKeyhole size={13} className="mr-1 inline" />{frozenLabel}</span>
+        {sheet?.protected && <span title="This worksheet is protected"><LockKeyhole size={13} className="mr-1 inline" />Protected</span>}
+        <form className="flex items-center gap-1" onSubmit={(event) => { event.preventDefault(); goToCell() }}>
+          <label className="sr-only" htmlFor="spreadsheet-go-to">Go to cell</label>
+          <Search size={13} />
+          <input id="spreadsheet-go-to" aria-label="Go to spreadsheet cell" value={jumpAddress} onChange={(event) => setJumpAddress(event.target.value)} placeholder="Go to cell, e.g. H67" className="w-36 rounded border border-(--color-border) bg-(--color-bg-inset) px-2 py-1 font-mono text-(--color-text) outline-none focus:border-(--color-accent)" />
+        </form>
+        <div className="ml-auto flex items-center gap-1" aria-label="Spreadsheet zoom controls">
+          <button type="button" aria-label="Zoom out" onClick={() => setZoom((value) => Math.max(50, value - 10))} className="rounded p-1 hover:bg-(--color-bg-inset)"><ZoomOut size={15} /></button>
+          <button type="button" aria-label="Reset spreadsheet zoom" onClick={() => setZoom(sheet?.zoom ?? 100)} className="min-w-12 rounded px-1 py-1 hover:bg-(--color-bg-inset)">{zoom}%</button>
+          <button type="button" aria-label="Zoom in" onClick={() => setZoom((value) => Math.min(200, value + 10))} className="rounded p-1 hover:bg-(--color-bg-inset)"><ZoomIn size={15} /></button>
+          <button type="button" aria-label="Fit spreadsheet width" onClick={() => setZoom(80)} className="rounded p-1 hover:bg-(--color-bg-inset)" title="Compact view"><Maximize2 size={15} /></button>
+        </div>
       </div>
       <div className="shrink-0 border-b border-(--color-border) bg-(--color-bg-inset) px-3 py-2 text-xs">
         {selectedCell ? (
@@ -187,27 +224,34 @@ function SpreadsheetViewer({ tab }: { tab: Tab }): React.JSX.Element {
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {sheet ? (
-          <table className="border-separate border-spacing-0 text-left text-xs">
+          <table className="border-separate border-spacing-0 text-left text-xs" style={{ zoom: `${zoom}%` }}>
             <thead>
               <tr>
                 <th className="sticky top-0 left-0 z-30 min-w-10 border-b border-r border-(--color-border) bg-(--color-bg-elevated)" />
-                {sheet.rows[0]?.map((_, columnIndex) => <th key={columnIndex} className="sticky top-0 z-20 min-w-28 border-b border-r border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-center font-mono font-medium text-(--color-text-muted)">{columnLabel(columnIndex)}</th>)}
+                {sheet.rows[0]?.map((_, columnIndex) => !sheet.columns[columnIndex]?.hidden && <th key={columnIndex} className="sticky top-0 z-20 border-b border-r border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-center font-mono font-medium text-(--color-text-muted)" style={{ minWidth: `${Math.max(56, (sheet.columns[columnIndex]?.width ?? 14) * 7)}px` }}>{columnLabel(columnIndex)}</th>)}
               </tr>
             </thead>
             <tbody>
-              {sheet.rows.map((row, rowIndex) => (
-                <tr key={rowIndex}>
+              {sheet.rows.map((row, rowIndex) => !sheet.rowMeta[rowIndex]?.hidden && (
+                <tr key={rowIndex} style={{ height: sheet.rowMeta[rowIndex]?.height ? `${sheet.rowMeta[rowIndex].height}px` : undefined }}>
                   <th className="sticky left-0 z-10 min-w-10 border-b border-r border-(--color-border) bg-(--color-bg-elevated) px-2 text-right font-mono font-medium text-(--color-text-muted)">{rowIndex + 1}</th>
-                  {row.map((cell: SpreadsheetCell) => {
+                  {row.map((cell: SpreadsheetCell, columnIndex) => {
+                    const rowNumber = rowIndex + 1
+                    const columnNumber = columnIndex + 1
+                    if (sheet.columns[columnIndex]?.hidden || insideMerge(rowNumber, columnNumber)) return null
+                    const merge = mergeAt(rowNumber, columnNumber)
                     const highlight = highlightedCells.get(cell.address)
                     const isSelected = cell.address === selectedAddress
-                    return <td key={cell.address} className="border-b border-r border-(--color-border) p-0">
+                    const style = { backgroundColor: cell.style?.background, color: cell.style?.color, fontWeight: cell.style?.bold ? 700 : undefined, fontStyle: cell.style?.italic ? 'italic' : undefined, textAlign: cell.style?.horizontal, verticalAlign: cell.style?.vertical, whiteSpace: cell.style?.wrapText ? 'pre-wrap' : 'nowrap' } as React.CSSProperties
+                    return <td key={cell.address} colSpan={merge ? merge.right - merge.left + 1 : undefined} rowSpan={merge ? merge.bottom - merge.top + 1 : undefined} className="border-b border-r border-(--color-border) p-0">
                       <button
+                        id={`spreadsheet-cell-${cell.address}`}
                         type="button"
                         onClick={() => setSelectedAddress(cell.address)}
                         title={cell.formula ? `Formula: =${cell.formula}` : cell.value}
                         aria-label={`Spreadsheet cell ${cell.address}${cell.formula ? ', formula' : ''}`}
-                        className={`block min-h-9 min-w-28 max-w-96 w-full border-2 px-3 py-2 text-left align-top whitespace-pre-wrap focus:outline-none ${isSelected ? 'border-(--color-accent) bg-(--color-accent)/15 ring-1 ring-(--color-accent)' : highlight != null ? FORMULA_COLORS[highlight].cell : 'border-transparent bg-(--color-bg) hover:bg-(--color-bg-inset)'}`}
+                        className={`block min-h-9 w-full border-2 px-3 py-2 text-left align-top focus:outline-none ${isSelected ? 'border-(--color-accent) bg-(--color-accent)/15 ring-1 ring-(--color-accent)' : highlight != null ? FORMULA_COLORS[highlight].cell : 'border-transparent bg-(--color-bg) hover:bg-(--color-bg-inset)'}`}
+                        style={style}
                       >
                         <span>{cell.value}</span>{cell.formula && <span className="ml-1 text-[10px] text-(--color-text-muted)" aria-label="Contains formula">ƒ</span>}
                       </button>

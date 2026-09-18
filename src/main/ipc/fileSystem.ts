@@ -3,7 +3,7 @@ import { promises as fs } from 'fs'
 import { join, extname, dirname, basename, parse, relative, resolve, sep } from 'path'
 import mammoth from 'mammoth'
 import ExcelJS from 'exceljs'
-import { documentKind, isCreatableKind, isEditableKind, type FileNode, type OpenedDocument, type SearchResult, type SpreadsheetData } from '../../shared/types'
+import { documentKind, isCreatableKind, isEditableKind, type FileNode, type OpenedDocument, type SearchResult, type SpreadsheetCellStyle, type SpreadsheetData, type SpreadsheetMerge } from '../../shared/types'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdx'])
 
@@ -43,6 +43,34 @@ function cellFormula(cell: ExcelJS.Cell): string | undefined {
   return undefined
 }
 
+function excelColor(color: { argb?: string } | undefined): string | undefined {
+  const argb = color?.argb
+  if (!argb || !/^[A-Fa-f0-9]{8}$/.test(argb)) return undefined
+  const alpha = Number.parseInt(argb.slice(0, 2), 16) / 255
+  const rgb = argb.slice(2)
+  return alpha >= 0.99 ? `#${rgb}` : `#${rgb}${argb.slice(0, 2)}`
+}
+
+function cellStyle(cell: ExcelJS.Cell): SpreadsheetCellStyle | undefined {
+  const style: SpreadsheetCellStyle = {}
+  const fill = cell.fill as { fgColor?: { argb?: string } } | undefined
+  const background = excelColor(fill?.fgColor)
+  const color = excelColor(cell.font?.color)
+  if (background) style.background = background
+  if (color) style.color = color
+  if (cell.font?.bold) style.bold = true
+  if (cell.font?.italic) style.italic = true
+  if (cell.alignment?.horizontal) style.horizontal = cell.alignment.horizontal as SpreadsheetCellStyle['horizontal']
+  if (cell.alignment?.vertical) style.vertical = cell.alignment.vertical as SpreadsheetCellStyle['vertical']
+  if (cell.alignment?.wrapText) style.wrapText = true
+  return Object.keys(style).length ? style : undefined
+}
+
+function sheetMerges(sheet: ExcelJS.Worksheet): SpreadsheetMerge[] {
+  const merges = (sheet as unknown as { _merges?: Record<string, { model: SpreadsheetMerge }> })._merges ?? {}
+  return Object.values(merges).map((merge) => merge.model)
+}
+
 async function openDocument(path: string): Promise<OpenedDocument> {
   const kind = documentKind(path)
   if (kind === 'unsupported') {
@@ -75,11 +103,25 @@ async function openDocument(path: string): Promise<OpenedDocument> {
       const row: SpreadsheetData['rows'][number] = []
       for (let column = 1; column <= maxColumns; column += 1) {
         const cell = sheet.getCell(rowNumber, column)
-        row.push({ address: cell.address, value: cellText(cell.value), formula: cellFormula(cell) })
+        row.push({ address: cell.address, value: cellText(cell.value), formula: cellFormula(cell), style: cellStyle(cell), locked: cell.protection?.locked })
       }
       rows.push(row)
     }
-    return { name: sheet.name, rows, truncated: sheet.rowCount > maxRows || sheet.columnCount > maxColumns }
+    const view = (sheet.views ?? [])[0]
+    return {
+      name: sheet.name,
+      rows,
+      truncated: sheet.rowCount > maxRows || sheet.columnCount > maxColumns,
+      columns: Array.from({ length: maxColumns }, (_, index) => ({ width: sheet.getColumn(index + 1).width, hidden: sheet.getColumn(index + 1).hidden })),
+      rowMeta: Array.from({ length: maxRows }, (_, index) => ({ height: sheet.getRow(index + 1).height, hidden: sheet.getRow(index + 1).hidden })),
+      merges: sheetMerges(sheet).filter((merge) => merge.top <= maxRows && merge.left <= maxColumns),
+      frozenRows: view?.state === 'frozen' ? view.ySplit ?? 0 : 0,
+      frozenColumns: view?.state === 'frozen' ? view.xSplit ?? 0 : 0,
+      zoom: view?.zoomScale ?? view?.zoomScaleNormal ?? 100,
+      activeCell: view?.activeCell,
+      hidden: sheet.state === 'hidden' || sheet.state === 'veryHidden',
+      protected: Boolean((sheet as unknown as { sheetProtection?: unknown }).sheetProtection)
+    }
   })
   return { kind, editable: false, content: '', sheets }
 }

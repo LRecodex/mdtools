@@ -20,6 +20,13 @@ test('search, folder navigation, document find and responsive status bar', async
   worksheet.getCell('A1').value = 6
   worksheet.getCell('B1').value = 7
   worksheet.getCell('C1').value = { formula: 'A1*B1', result: 42 }
+  worksheet.getCell('D1').value = 'Merged title'
+  worksheet.mergeCells('D1:E1')
+  worksheet.getColumn(1).width = 20
+  worksheet.views = [{ state: 'frozen', ySplit: 1, topLeftCell: 'A2', activeCell: 'C1', zoomScale: 115 }]
+  worksheet.addRow([1, 2, 3, 4, 5]).hidden = true
+  const hiddenSheet = workbook.addWorksheet('Hidden calculations')
+  hiddenSheet.state = 'hidden'
   const spreadsheetPath = join(workspace, 'formula-demo.xlsx')
   await workbook.xlsx.writeFile(spreadsheetPath)
   await writeFile(join(profile, 'settings.json'), JSON.stringify({ lastWorkspace: workspace, editorMode: 'preview', theme: 'dark', sidebarWidth: 400, windowBounds: { width: 1280, height: 800 } }))
@@ -133,6 +140,13 @@ test('search, folder navigation, document find and responsive status bar', async
     await expect(page.getByText('A1*B1')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Spreadsheet cell A1', exact: true })).toHaveClass(/border-rose-400/)
     await expect(page.getByRole('button', { name: 'Spreadsheet cell B1', exact: true })).toHaveClass(/border-sky-400/)
+    await expect(page.getByText('Frozen: 1 row')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Reset spreadsheet zoom', exact: true })).toHaveText('115%')
+    await page.getByRole('textbox', { name: 'Go to spreadsheet cell', exact: true }).fill('A1')
+    await page.getByRole('textbox', { name: 'Go to spreadsheet cell', exact: true }).press('Enter')
+    await expect(page.getByText('A1', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Show hidden sheets', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Hidden calculations (hidden)', exact: true })).toBeVisible()
     expect(errors).toEqual([])
   } finally {
     await app.close()

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.0 - 2026-09-18
+
+- Excel previews now retain workbook formatting, merged cells, row heights, column widths, and hidden rows and columns.
+- Added clear saved-pane and protection indicators, including access to hidden worksheets when needed.
+- Added spreadsheet zoom controls and a direct cell jump field for navigating long schedules.
+- Open the workbook at its saved active cell and zoom level for a more familiar Excel view.
+
 ## 1.10.0 - 2026-09-18
 
 - Made Excel previews easier to navigate with visible row and column labels.
