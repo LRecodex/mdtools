@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0 - 2026-09-18
+
+- Made Excel previews easier to navigate with visible row and column labels.
+- Added a formula inspector: select any cell to view its value or calculation.
+- Formula references are now color-coded and their source cells are highlighted with matching colors, making calculations easy to trace.
+
 ## 1.9.1 - 2026-09-17
 
 - Added a top toolbar Wiki link button that inserts `[[Page name]]` with the page name selected for easy replacement.

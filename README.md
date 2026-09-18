@@ -2,7 +2,7 @@
 
 A fast, polished desktop app for browsing, viewing, and authoring Markdown files — with live preview, built-in Mermaid diagram rendering, and automatic update checks in packaged builds.
 
-Current app version: **v1.9.0**.
+Current app version: **v1.10.0**.
 
 This is the **source repository** (private). For the latest prebuilt Windows installer or portable build, see
 [LRecodex/mdtools-releases](https://github.com/LRecodex/mdtools-releases/releases/latest).
@@ -68,6 +68,7 @@ src/
 | **HTML export** | Export rendered Markdown previews as PDF or standalone HTML |
 | **Settings dialog** | Adjust theme, default editor mode, sidebar visibility, sidebar width, and update status |
 | **User-controlled updates** | Packaged builds show update availability in the status bar, let you download when ready, then restart to install |
+| **Formula-aware Excel preview** | Select a spreadsheet cell to inspect its formula and result; referenced cells and formula terms share colors so calculations are easy to trace |
 | **Themes** | Light / dark / system, cycled with `Ctrl+,` |
 | **Built-in Help** | `Ctrl+/` opens an in-app cheat sheet for syntax, shortcuts, and Mermaid |
 

@@ -24,9 +24,18 @@ export type DocumentKind =
   | 'xlsx'
   | 'unsupported'
 
+export interface SpreadsheetCell {
+  /** Excel A1 address, such as B14. */
+  address: string
+  /** The calculated value shown in the workbook. */
+  value: string
+  /** The underlying Excel expression, without a leading equals sign. */
+  formula?: string
+}
+
 export interface SpreadsheetData {
   name: string
-  rows: string[][]
+  rows: SpreadsheetCell[][]
   truncated: boolean
 }
 

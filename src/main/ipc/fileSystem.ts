@@ -33,6 +33,16 @@ function cellText(value: ExcelJS.CellValue): string {
   return JSON.stringify(value)
 }
 
+function cellFormula(cell: ExcelJS.Cell): string | undefined {
+  if (cell.formula) return cell.formula
+  const value = cell.value
+  if (value && typeof value === 'object' && 'formula' in value) {
+    const formula = (value as { formula?: unknown }).formula
+    return typeof formula === 'string' ? formula : undefined
+  }
+  return undefined
+}
+
 async function openDocument(path: string): Promise<OpenedDocument> {
   const kind = documentKind(path)
   if (kind === 'unsupported') {
@@ -60,11 +70,12 @@ async function openDocument(path: string): Promise<OpenedDocument> {
   const sheets: SpreadsheetData[] = workbook.worksheets.map((sheet) => {
     const maxRows = Math.min(sheet.rowCount, 1000)
     const maxColumns = Math.min(sheet.columnCount, 100)
-    const rows: string[][] = []
+    const rows: SpreadsheetData['rows'] = []
     for (let rowNumber = 1; rowNumber <= maxRows; rowNumber += 1) {
-      const row: string[] = []
+      const row: SpreadsheetData['rows'][number] = []
       for (let column = 1; column <= maxColumns; column += 1) {
-        row.push(cellText(sheet.getCell(rowNumber, column).value))
+        const cell = sheet.getCell(rowNumber, column)
+        row.push({ address: cell.address, value: cellText(cell.value), formula: cellFormula(cell) })
       }
       rows.push(row)
     }

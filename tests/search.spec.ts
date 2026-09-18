@@ -2,6 +2,7 @@ import { test, expect, _electron as electron } from '@playwright/test'
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import ExcelJS from 'exceljs'
 
 test('search, folder navigation, document find and responsive status bar', async () => {
   const temp = await mkdtemp(join(tmpdir(), 'mdtools-search-'))
@@ -14,6 +15,13 @@ test('search, folder navigation, document find and responsive status bar', async
   const content = '# Rate reference\n\nAlpha alpha **Alpha**\n\n' + 'A long example paragraph for status bar layout.\n\n'.repeat(500) + '\nFinalNeedle\n'
   await writeFile(path, content)
   await writeFile(join(workspace, 'policies.md'), '# Reference\n\nThe HP Act applies to this example.\n')
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet('Formula demo')
+  worksheet.getCell('A1').value = 6
+  worksheet.getCell('B1').value = 7
+  worksheet.getCell('C1').value = { formula: 'A1*B1', result: 42 }
+  const spreadsheetPath = join(workspace, 'formula-demo.xlsx')
+  await workbook.xlsx.writeFile(spreadsheetPath)
   await writeFile(join(profile, 'settings.json'), JSON.stringify({ lastWorkspace: workspace, editorMode: 'preview', theme: 'dark', sidebarWidth: 400, windowBounds: { width: 1280, height: 800 } }))
   const env = { ...process.env }
   delete env.ELECTRON_RUN_AS_NODE
@@ -118,6 +126,13 @@ test('search, folder navigation, document find and responsive status bar', async
     await cmFind.dispatchEvent('change')
     await page.keyboard.press('Enter')
     await expect(page.locator('.cm-searchMatch-selected')).toContainText('Alpha')
+    await page.keyboard.press('Escape')
+    await page.getByRole('treeitem', { name: 'formula-demo.xlsx', exact: true }).dblclick()
+    await page.getByRole('button', { name: 'Spreadsheet cell C1, formula', exact: true }).click()
+    await expect(page.getByText('Result: 42')).toBeVisible()
+    await expect(page.getByText('A1*B1')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Spreadsheet cell A1', exact: true })).toHaveClass(/border-rose-400/)
+    await expect(page.getByRole('button', { name: 'Spreadsheet cell B1', exact: true })).toHaveClass(/border-sky-400/)
     expect(errors).toEqual([])
   } finally {
     await app.close()
