@@ -13,6 +13,7 @@ import SettingsDialog from './components/Dialogs/SettingsDialog'
 import UpdateDialog from './components/Dialogs/UpdateDialog'
 import CommandPalette from './components/CommandPalette/CommandPalette'
 import EmptyState from './components/EmptyState/EmptyState'
+import TerminalPanel from './components/Terminal/TerminalPanel'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { documentKind } from '../../shared/types'
 
@@ -22,6 +23,7 @@ export default function App(): React.JSX.Element {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot)
   const sidebarVisible = useAppStore((s) => s.sidebarVisible)
   const tabs = useAppStore((s) => s.tabs)
+  const terminalVisible = useAppStore((s) => s.terminalVisible)
   const openFile = useAppStore((s) => s.openFile)
   const dragDepth = useRef(0)
   const [isFileDragActive, setIsFileDragActive] = useState(false)
@@ -108,6 +110,7 @@ export default function App(): React.JSX.Element {
         {workspaceRoot || tabs.length > 0 ? (
           <div className="flex min-w-0 flex-1 flex-col">
             <EditorPane />
+            {terminalVisible && <TerminalPanel />}
             <StatusBar />
           </div>
         ) : (

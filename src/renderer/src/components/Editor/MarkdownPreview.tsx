@@ -62,6 +62,19 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps): Reac
   const createFile = useAppStore((s) => s.createFile)
 
   useEffect(() => {
+    const handleGotoLine = (event: Event): void => {
+      const line = (event as CustomEvent<number>).detail
+      if (typeof line !== 'number') return
+      const lines = content.split(/\r?\n/)
+      const headingIndex = lines.slice(0, Math.max(0, line - 1)).filter((item) => /^#{1,6}\s+/.test(item)).length
+      const heading = containerRef.current?.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6')[headingIndex]
+      heading?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    window.addEventListener('mdtools:goto-line', handleGotoLine)
+    return () => window.removeEventListener('mdtools:goto-line', handleGotoLine)
+  }, [content])
+
+  useEffect(() => {
     const container = containerRef.current
     if (!container) return
     let cancelled = false

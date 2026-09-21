@@ -34,6 +34,7 @@ interface AppState {
   editorMode: Settings['editorMode']
   sidebarVisible: boolean
   sidebarWidth: number
+  terminalVisible: boolean
   recentWorkspaces: string[]
   quickOpenOpen: boolean
   commandPaletteOpen: boolean
@@ -75,6 +76,7 @@ interface AppState {
   setEditorMode: (mode: Settings['editorMode']) => void
   toggleSidebar: () => void
   setSidebarWidth: (width: number) => void
+  toggleTerminal: () => void
   setQuickOpenOpen: (open: boolean) => void
   setCommandPaletteOpen: (open: boolean) => void
   setSettingsOpen: (open: boolean) => void
@@ -126,6 +128,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   editorMode: 'split',
   sidebarVisible: true,
   sidebarWidth: 256,
+  terminalVisible: false,
   recentWorkspaces: [],
   quickOpenOpen: false,
   commandPaletteOpen: false,
@@ -440,6 +443,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ sidebarWidth })
     window.api.settings.update({ sidebarWidth })
   },
+
+  toggleTerminal: () => set((state) => ({ terminalVisible: !state.terminalVisible })),
 
   setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),

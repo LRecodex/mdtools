@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Minus, Square, Copy, X, FileText, HelpCircle, PanelLeft } from 'lucide-react'
+import { Minus, Square, Copy, X, FileText, HelpCircle, PanelLeft, TerminalSquare } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { basename } from '../../lib/path'
 
@@ -11,6 +11,8 @@ export default function TitleBar(): React.JSX.Element {
   const setHelpOpen = useAppStore((s) => s.setHelpOpen)
   const sidebarVisible = useAppStore((s) => s.sidebarVisible)
   const toggleSidebar = useAppStore((s) => s.toggleSidebar)
+  const terminalVisible = useAppStore((s) => s.terminalVisible)
+  const toggleTerminal = useAppStore((s) => s.toggleTerminal)
 
   useEffect(() => {
     window.api.win.isMaximized().then(setMaximized)
@@ -26,6 +28,15 @@ export default function TitleBar(): React.JSX.Element {
   return (
     <div className="app-region-drag flex h-9 shrink-0 items-center justify-between border-b border-(--color-border) bg-(--color-titlebar) pl-3 text-sm">
       <div className="flex min-w-0 items-center gap-2 text-(--color-text-muted)">
+        <button
+          type="button"
+          aria-label={terminalVisible ? 'Hide terminal' : 'Show terminal'}
+          title={`${terminalVisible ? 'Hide' : 'Show'} terminal (Ctrl+J)`}
+          className="app-region-no-drag flex h-7 w-7 shrink-0 items-center justify-center rounded-md hover:bg-(--color-bg-inset) hover:text-(--color-text)"
+          onClick={toggleTerminal}
+        >
+          <TerminalSquare size={15} />
+        </button>
         <button
           type="button"
           aria-label={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}

@@ -73,6 +73,15 @@ const api = {
       return () => ipcRenderer.removeListener('update:status', listener)
     }
   }
+  ,terminal: {
+    run: (command: string, cwd: string | null): Promise<{ id: number }> => ipcRenderer.invoke('terminal:run', command, cwd),
+    stop: (id: number): Promise<void> => ipcRenderer.invoke('terminal:stop', id),
+    onOutput: (callback: (payload: { id: number; stream: 'stdout' | 'stderr' | 'exit'; data: string }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { id: number; stream: 'stdout' | 'stderr' | 'exit'; data: string }): void => callback(payload)
+      ipcRenderer.on('terminal:output', listener)
+      return () => ipcRenderer.removeListener('terminal:output', listener)
+    }
+  }
 }
 
 contextBridge.exposeInMainWorld('api', api)

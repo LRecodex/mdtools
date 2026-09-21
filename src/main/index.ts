@@ -8,6 +8,7 @@ import { registerSettingsHandlers } from './ipc/settings'
 import { registerWatcherHandlers } from './watcher'
 import { getSettings, updateSettings } from './settings'
 import { registerAutoUpdater } from './autoUpdate'
+import { registerTerminalHandlers } from './ipc/terminal'
 
 const DEFAULT_WINDOW_WIDTH = 1280
 const DEFAULT_WINDOW_HEIGHT = 800
@@ -117,6 +118,7 @@ app.whenReady().then(() => {
   registerSettingsHandlers()
   registerWatcherHandlers()
   registerAutoUpdater()
+  registerTerminalHandlers()
 
   createWindow()
 

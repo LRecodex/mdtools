@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.0 - 2026-09-21
+
+- Outline entries now navigate to the matching heading in both the editor and rendered preview.
+- Added a title-bar/sidebar-friendly terminal panel for running Claude, Codex, npm, Git, and other workspace commands.
+- Terminal output streams live with stop, clear, and Ctrl+J toggle controls.
+
 ## 1.11.1 - 2026-09-18
 
 - Fixed Excel preview contrast so text remains readable on bright spreadsheet fills.

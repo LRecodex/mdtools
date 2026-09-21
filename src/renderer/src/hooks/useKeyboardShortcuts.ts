@@ -29,6 +29,12 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
+      if (!e.shiftKey && e.key.toLowerCase() === 'j') {
+        e.preventDefault()
+        state.toggleTerminal()
+        return
+      }
+
       if (e.shiftKey && e.key.toLowerCase() === 't') {
         e.preventDefault()
         const activeTab = state.tabs.find((tab) => tab.path === state.activeTabPath)
