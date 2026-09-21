@@ -75,6 +75,7 @@ const api = {
   }
   ,terminal: {
     run: (command: string, cwd: string | null): Promise<{ id: number }> => ipcRenderer.invoke('terminal:run', command, cwd),
+    input: (id: number, input: string): Promise<void> => ipcRenderer.invoke('terminal:input', id, input),
     stop: (id: number): Promise<void> => ipcRenderer.invoke('terminal:stop', id),
     onOutput: (callback: (payload: { id: number; stream: 'stdout' | 'stderr' | 'exit'; data: string }) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: { id: number; stream: 'stdout' | 'stderr' | 'exit'; data: string }): void => callback(payload)

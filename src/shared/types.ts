@@ -128,6 +128,8 @@ export interface Settings {
   editorMode: 'edit' | 'split' | 'preview'
   sidebarVisible: boolean
   sidebarWidth: number
+  insightsVisible: boolean
+  insightsWidth: number
 }
 
 export type WatchEventType = 'add' | 'addDir' | 'unlink' | 'unlinkDir' | 'change'
@@ -166,5 +168,7 @@ export const DEFAULT_SETTINGS: Settings = {
   windowBounds: null,
   editorMode: 'split',
   sidebarVisible: true,
-  sidebarWidth: 256
+  sidebarWidth: 256,
+  insightsVisible: true,
+  insightsWidth: 256
 }

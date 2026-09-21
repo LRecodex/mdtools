@@ -35,6 +35,8 @@ interface AppState {
   sidebarVisible: boolean
   sidebarWidth: number
   terminalVisible: boolean
+  insightsVisible: boolean
+  insightsWidth: number
   recentWorkspaces: string[]
   quickOpenOpen: boolean
   commandPaletteOpen: boolean
@@ -77,6 +79,8 @@ interface AppState {
   toggleSidebar: () => void
   setSidebarWidth: (width: number) => void
   toggleTerminal: () => void
+  toggleInsights: () => void
+  setInsightsWidth: (width: number) => void
   setQuickOpenOpen: (open: boolean) => void
   setCommandPaletteOpen: (open: boolean) => void
   setSettingsOpen: (open: boolean) => void
@@ -129,6 +133,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   sidebarVisible: true,
   sidebarWidth: 256,
   terminalVisible: false,
+  insightsVisible: true,
+  insightsWidth: 256,
   recentWorkspaces: [],
   quickOpenOpen: false,
   commandPaletteOpen: false,
@@ -154,6 +160,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       editorMode: settings.editorMode,
       sidebarVisible: settings.sidebarVisible,
       sidebarWidth: settings.sidebarWidth,
+      insightsVisible: settings.insightsVisible,
+      insightsWidth: settings.insightsWidth,
       recentWorkspaces: settings.recentWorkspaces,
       bootstrapped: true
     })
@@ -445,6 +453,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   toggleTerminal: () => set((state) => ({ terminalVisible: !state.terminalVisible })),
+  toggleInsights: () => {
+    const insightsVisible = !get().insightsVisible
+    set({ insightsVisible })
+    window.api.settings.update({ insightsVisible })
+  },
+  setInsightsWidth: (width) => {
+    const insightsWidth = Math.round(Math.min(520, Math.max(208, width)))
+    set({ insightsWidth })
+    window.api.settings.update({ insightsWidth })
+  },
 
   setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),

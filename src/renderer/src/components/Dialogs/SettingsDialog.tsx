@@ -12,6 +12,10 @@ export default function SettingsDialog(): React.JSX.Element | null {
   const toggleSidebar = useAppStore((s) => s.toggleSidebar)
   const sidebarWidth = useAppStore((s) => s.sidebarWidth)
   const setSidebarWidth = useAppStore((s) => s.setSidebarWidth)
+  const insightsVisible = useAppStore((s) => s.insightsVisible)
+  const toggleInsights = useAppStore((s) => s.toggleInsights)
+  const insightsWidth = useAppStore((s) => s.insightsWidth)
+  const setInsightsWidth = useAppStore((s) => s.setInsightsWidth)
   const setUpdateDialogOpen = useAppStore((s) => s.setUpdateDialogOpen)
 
   if (!open) return null
@@ -38,6 +42,17 @@ export default function SettingsDialog(): React.JSX.Element | null {
                 </button>
               ))}
             </div>
+          </section>
+          <section>
+            <h3 className="mb-2 text-xs font-semibold uppercase text-(--color-text-muted)">Outline panel</h3>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={insightsVisible} onChange={toggleInsights} />
+              Show outline panel
+            </label>
+            <label className="mt-3 block">
+              <span className="mb-1 block text-xs text-(--color-text-muted)">Width: {insightsWidth}px</span>
+              <input type="range" min={208} max={520} value={insightsWidth} onChange={(event) => setInsightsWidth(Number(event.target.value))} className="w-full" />
+            </label>
           </section>
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase text-(--color-text-muted)">Markdown editor</h3>

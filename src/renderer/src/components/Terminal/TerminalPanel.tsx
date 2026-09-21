@@ -22,7 +22,18 @@ export default function TerminalPanel(): React.JSX.Element {
 
   const run = async (): Promise<void> => {
     const value = command.trim()
-    if (!value || processId !== null) return
+    if (!value) return
+    if (processId !== null) {
+      setOutput((current) => `${current}${value}\n`)
+      setCommand('')
+      await window.api.terminal.input(processId, `${value}\n`)
+      return
+    }
+    if (/^clear$/i.test(value) && navigator.platform.toLowerCase().includes('win')) {
+      setOutput('')
+      setCommand('')
+      return
+    }
     setOutput((current) => `${current}${current ? '\n' : ''}$ ${value}\n`)
     setCommand('')
     const result = await window.api.terminal.run(value, workspaceRoot)
@@ -41,8 +52,8 @@ export default function TerminalPanel(): React.JSX.Element {
     <pre ref={outputRef} className="text-select min-h-0 flex-1 overflow-auto whitespace-pre-wrap px-3 py-2 font-mono text-xs leading-5 text-(--color-text)">{output || 'Run a command in the workspace. Try claude, codex, npm test, or git status.'}</pre>
     <form className="flex items-center gap-2 border-t border-(--color-border) px-2 py-1.5" onSubmit={(event) => { event.preventDefault(); void run() }}>
       <ChevronDown size={14} className="text-(--color-accent)" />
-      <input value={command} onChange={(event) => setCommand(event.target.value)} placeholder="Enter a command…" className="min-w-0 flex-1 bg-transparent font-mono text-xs outline-none" aria-label="Terminal command" />
-      <button type="submit" disabled={!command.trim() || processId !== null} title="Run command" aria-label="Run command" className="rounded p-1 text-(--color-accent) hover:bg-(--color-bg-elevated) disabled:opacity-40"><Play size={14} /></button>
+      <input value={command} onChange={(event) => setCommand(event.target.value)} placeholder={processId !== null ? 'Send input to process…' : 'Enter a command…'} className="min-w-0 flex-1 bg-transparent font-mono text-xs outline-none" aria-label="Terminal command" />
+      <button type="submit" disabled={!command.trim()} title={processId !== null ? 'Send input' : 'Run command'} aria-label={processId !== null ? 'Send input' : 'Run command'} className="rounded p-1 text-(--color-accent) hover:bg-(--color-bg-elevated) disabled:opacity-40"><Play size={14} /></button>
     </form>
   </section>
 }

@@ -31,4 +31,9 @@ export function registerTerminalHandlers(): void {
     if (child && !child.killed) child.kill()
     processes.delete(id)
   })
+
+  ipcMain.handle('terminal:input', (_event, id: number, input: string) => {
+    const child = processes.get(id)
+    if (child?.stdin?.writable) child.stdin.write(input)
+  })
 }

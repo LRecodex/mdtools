@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.2 - 2026-09-21
+
+- Terminal now accepts input for interactive Claude, Codex, and other CLI sessions.
+- `clear` works from the Windows terminal panel, and running processes can be stopped or sent input.
+- Outline panel can now be resized, hidden, shown, and configured from Settings like the file sidebar.
+
 ## 1.12.0 - 2026-09-21
 
 - Outline entries now navigate to the matching heading in both the editor and rendered preview.

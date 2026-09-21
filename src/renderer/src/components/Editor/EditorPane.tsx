@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Download, FilePlus2, FileText, LayoutTemplate, Search } from 'lucide-react'
+import { Download, FilePlus2, FileText, LayoutTemplate, PanelRight, Search } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import EditorTabs from './EditorTabs'
 import ModeSwitcher from './ModeSwitcher'
@@ -25,6 +25,8 @@ export default function EditorPane(): React.JSX.Element {
   const setQuickOpenOpen = useAppStore((s) => s.setQuickOpenOpen)
   const setTemplateDialog = useAppStore((s) => s.setTemplateDialog)
   const resolvedTheme = useAppStore((s) => s.resolvedTheme)
+  const insightsVisible = useAppStore((s) => s.insightsVisible)
+  const toggleInsights = useAppStore((s) => s.toggleInsights)
 
   const activeTab = tabs.find((t) => t.path === activeTabPath)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -193,6 +195,7 @@ export default function EditorPane(): React.JSX.Element {
                 <LayoutTemplate size={14} />
                 <span className="toolbar-label">Templates</span>
               </button>
+              <button type="button" aria-label={insightsVisible ? 'Hide outline' : 'Show outline'} title={`${insightsVisible ? 'Hide' : 'Show'} outline`} onClick={toggleInsights} className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-(--color-text-muted) hover:bg-(--color-bg-inset) hover:text-(--color-text)"><PanelRight size={14} /><span className="toolbar-label">Outline</span></button>
               <ModeSwitcher />
             </div>
           </div>
