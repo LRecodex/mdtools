@@ -46,7 +46,12 @@ export default function StatusBar(): React.JSX.Element {
   }, [])
 
   const updateAction = useMemo(() => {
-    if (!updateStatus || updateStatus.status === 'unsupported' || updateStatus.status === 'idle') return null
+    if (!updateStatus || updateStatus.status === 'unsupported' || updateStatus.status === 'idle') {
+      return updateStatus?.status === 'unsupported' ? null : { label: 'Check for updates', text: 'Check updates', disabled: false, icon: RefreshCw }
+    }
+    if (updateStatus.status === 'not-available') {
+      return { label: 'Check for updates', text: 'Up to date', disabled: false, icon: RefreshCw }
+    }
     if (updateStatus.status === 'checking') {
       return { label: 'Checking for updates', text: 'Checking', disabled: true, icon: RefreshCw }
     }

@@ -6,6 +6,8 @@ import type { UpdateStatus } from '../shared/types'
 const { autoUpdater } = electronUpdater
 let status: UpdateStatus = { status: 'idle', currentVersion: version }
 let registered = false
+let updateCheckTimer: NodeJS.Timeout | null = null
+const UPDATE_CHECK_INTERVAL_MS = 10 * 60 * 1000
 
 function setStatus(next: UpdateStatus): void {
   status = next
@@ -19,15 +21,23 @@ export function registerAutoUpdater(): void {
   registered = true
 
   ipcMain.handle('update:getStatus', () => status)
-  ipcMain.handle('update:check', async () => {
+  const checkForUpdates = async (): Promise<UpdateStatus> => {
     if (!app.isPackaged) {
       setStatus({ status: 'unsupported', currentVersion: version, message: 'Updates are available in packaged builds.' })
       return status
     }
+    if (status.status === 'checking' || status.status === 'downloading' || status.status === 'downloaded') return status
     setStatus({ status: 'checking', currentVersion: version })
-    await autoUpdater.checkForUpdates()
+    try {
+      await autoUpdater.checkForUpdates()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      setStatus({ status: 'error', currentVersion: version, message })
+    }
     return status
-  })
+  }
+
+  ipcMain.handle('update:check', checkForUpdates)
   ipcMain.handle('update:download', async () => {
     if (status.status !== 'available') return status
     setStatus({ ...status, status: 'downloading', percent: 0 })
@@ -72,9 +82,13 @@ export function registerAutoUpdater(): void {
   })
 
   setTimeout(() => {
-    setStatus({ status: 'checking', currentVersion: version })
-    void autoUpdater.checkForUpdates().catch((error: Error) => {
-      setStatus({ status: 'error', currentVersion: version, message: error.message })
-    })
+    void checkForUpdates()
   }, 5000)
+  updateCheckTimer = setInterval(() => {
+    void checkForUpdates()
+  }, UPDATE_CHECK_INTERVAL_MS)
+  app.on('will-quit', () => {
+    if (updateCheckTimer) clearInterval(updateCheckTimer)
+    updateCheckTimer = null
+  })
 }

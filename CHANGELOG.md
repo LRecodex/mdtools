@@ -6,6 +6,11 @@
 - Added a title-bar/sidebar-friendly terminal panel for running Claude, Codex, npm, Git, and other workspace commands.
 - Terminal output streams live with stop, clear, and Ctrl+J toggle controls.
 
+## 1.12.1 - 2026-09-21
+
+- Update checks now repeat automatically every 10 minutes while the app is running.
+- Added a persistent status-bar shortcut for manually opening the update checker.
+
 ## 1.11.1 - 2026-09-18
 
 - Fixed Excel preview contrast so text remains readable on bright spreadsheet fills.
