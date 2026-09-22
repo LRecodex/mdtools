@@ -1,6 +1,7 @@
 node_modules
 out
 release
+release-*/
 release-fixed
 release-tmp
 dist
