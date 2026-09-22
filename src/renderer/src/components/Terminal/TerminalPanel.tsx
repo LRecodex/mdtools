@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
+import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import { ChevronDown, MoreHorizontal, Plus, Square, Split, Trash2, X } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
@@ -12,6 +13,7 @@ export default function TerminalPanel(): React.JSX.Element {
   const viewportRef = useRef<HTMLDivElement>(null)
   const terminalRef = useRef<Terminal | null>(null)
   const processIdRef = useRef<number | null>(null)
+  const restartProcessRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -28,17 +30,15 @@ export default function TerminalPanel(): React.JSX.Element {
         ? { background: '#181818', foreground: '#d4d4d4', cursor: '#aeafad', selectionBackground: '#264f78' }
         : { background: '#ffffff', foreground: '#24292f', cursor: '#6366f1', selectionBackground: '#b6d7ff' }
     })
+    const fitAddon = new FitAddon()
+    terminal.loadAddon(fitAddon)
     terminal.open(viewport)
     terminalRef.current = terminal
 
     const fitAndResize = (): void => {
-      const rect = viewport.getBoundingClientRect()
-      const cellWidth = 8.2
-      const cellHeight = 18
-      const cols = Math.max(20, Math.floor(rect.width / cellWidth))
-      const rows = Math.max(4, Math.floor(rect.height / cellHeight))
-      if (terminal.cols !== cols || terminal.rows !== rows) terminal.resize(cols, rows)
-      if (processIdRef.current !== null) void window.api.terminal.resize(processIdRef.current, cols, rows)
+      if (!viewport.isConnected) return
+      fitAddon.fit()
+      if (processIdRef.current !== null) void window.api.terminal.resize(processIdRef.current, terminal.cols, terminal.rows)
     }
 
     const dataDisposable = terminal.onData((data) => {
@@ -62,6 +62,12 @@ export default function TerminalPanel(): React.JSX.Element {
       terminal.focus()
       await window.api.terminal.resize(result.id, terminal.cols, terminal.rows)
     }
+    restartProcessRef.current = () => {
+      if (processIdRef.current !== null) void window.api.terminal.stop(processIdRef.current)
+      processIdRef.current = null
+      terminal.clear()
+      void create()
+    }
     void create()
 
     return () => {
@@ -71,14 +77,15 @@ export default function TerminalPanel(): React.JSX.Element {
       exitCleanup()
       if (processIdRef.current !== null) void window.api.terminal.stop(processIdRef.current)
       processIdRef.current = null
+      restartProcessRef.current = null
       terminal.dispose()
+      fitAddon.dispose()
       terminalRef.current = null
     }
   }, [workspaceRoot, resolvedTheme])
 
   const newTerminal = (): void => {
-    terminalRef.current?.clear()
-    terminalRef.current?.focus()
+    restartProcessRef.current?.()
   }
 
   const clearTerminal = (): void => {

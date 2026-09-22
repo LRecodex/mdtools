@@ -107,15 +107,13 @@ export default function App(): React.JSX.Element {
       <TitleBar />
       <div className="flex min-h-0 flex-1">
         {sidebarVisible && <Sidebar />}
-        {workspaceRoot || tabs.length > 0 ? (
-          <div className="flex min-w-0 flex-1 flex-col">
-            <EditorPane />
-            {terminalVisible && <TerminalPanel />}
-            <StatusBar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
+            {workspaceRoot || tabs.length > 0 ? <EditorPane /> : <EmptyState />}
           </div>
-        ) : (
-          <EmptyState />
-        )}
+          {terminalVisible && <TerminalPanel />}
+          <StatusBar />
+        </div>
       </div>
       <QuickOpen />
       <CommandPalette />

@@ -55,7 +55,7 @@ export function registerDialogHandlers(): void {
     }
   })
 
-  ipcMain.handle('dialog:exportMarkdownPdf', async (event, html: string, title: string, suggestedName: string, theme: 'light' | 'dark') => {
+  ipcMain.handle('dialog:exportMarkdownPdf', async (event, html: string, title: string, suggestedName: string, _theme: 'light' | 'dark') => {
     const parent = BrowserWindow.fromWebContents(event.sender)
     if (!parent) return null
     const defaultName = suggestedName.replace(/\.(md|markdown|mdx)$/i, '') + '.pdf'
@@ -71,7 +71,8 @@ export function registerDialogHandlers(): void {
       webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, javascript: false }
     })
     try {
-      const document = pdfDocument(html, title, theme)
+      // PDF is a printable document: editor dark mode must not turn the paper dark.
+      const document = pdfDocument(html, title, 'light')
       await printWindow.loadURL(`data:text/html;charset=utf-8;base64,${Buffer.from(document).toString('base64')}`)
       const pdf = await printWindow.webContents.printToPDF({
         pageSize: 'A4',
