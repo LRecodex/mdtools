@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, Play, Square, Trash2, X } from 'lucide-react'
+import { ChevronDown, MoreHorizontal, Play, Plus, Square, Split, Trash2, X } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
+import { basename } from '../../lib/path'
 
 export default function TerminalPanel(): React.JSX.Element {
   const workspaceRoot = useAppStore((s) => s.workspaceRoot)
   const toggleTerminal = useAppStore((s) => s.toggleTerminal)
   const [command, setCommand] = useState('')
   const [output, setOutput] = useState('')
+  const [history, setHistory] = useState<string[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
   const [processId, setProcessId] = useState<number | null>(null)
   const outputRef = useRef<HTMLPreElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => window.api.terminal.onOutput((payload) => {
     if (payload.id !== processId && payload.stream !== 'exit') return
@@ -23,6 +27,8 @@ export default function TerminalPanel(): React.JSX.Element {
   const run = async (): Promise<void> => {
     const value = command.trim()
     if (!value) return
+    setHistory((current) => [...current.filter((item) => item !== value), value])
+    setHistoryIndex(-1)
     if (processId !== null) {
       setOutput((current) => `${current}${value}\n`)
       setCommand('')
@@ -40,20 +46,52 @@ export default function TerminalPanel(): React.JSX.Element {
     setProcessId(result.id)
   }
 
-  return <section className="flex h-56 shrink-0 flex-col border-t border-(--color-border) bg-(--color-bg-inset)">
-    <div className="flex h-8 shrink-0 items-center justify-between border-b border-(--color-border) px-2 text-xs">
-      <span className="font-semibold uppercase tracking-wide text-(--color-text-muted)">Terminal</span>
-      <div className="flex items-center gap-1">
-        <button type="button" title="Clear terminal" aria-label="Clear terminal" onClick={() => setOutput('')} className="rounded p-1 hover:bg-(--color-bg-elevated)"><Trash2 size={13} /></button>
-        {processId !== null && <button type="button" title="Stop process" aria-label="Stop process" onClick={() => void window.api.terminal.stop(processId)} className="rounded p-1 text-red-500 hover:bg-(--color-bg-elevated)"><Square size={13} /></button>}
-        <button type="button" title="Hide terminal" aria-label="Hide terminal" onClick={toggleTerminal} className="rounded p-1 hover:bg-(--color-bg-elevated)"><X size={14} /></button>
+  const startFreshTerminal = (): void => {
+    if (processId !== null) void window.api.terminal.stop(processId)
+    setProcessId(null)
+    setOutput('')
+    setCommand('')
+    inputRef.current?.focus()
+  }
+
+  const navigateHistory = (direction: 'up' | 'down'): void => {
+    if (history.length === 0) return
+    const nextIndex = direction === 'up'
+      ? Math.min(history.length - 1, historyIndex + 1)
+      : Math.max(-1, historyIndex - 1)
+    setHistoryIndex(nextIndex)
+    setCommand(nextIndex < 0 ? '' : history[history.length - 1 - nextIndex] ?? '')
+  }
+
+  return (
+    <section className="terminal-panel flex min-h-56 h-64 shrink-0 flex-col border-t border-(--color-terminal-border) bg-(--color-terminal-bg) text-(--color-terminal-text)">
+      <div className="terminal-header flex h-9 shrink-0 items-center border-b border-(--color-terminal-border) px-3 text-xs">
+        <span className="font-semibold uppercase tracking-wide text-(--color-text-muted)">Terminal</span>
+        <div className="ml-4 flex h-full min-w-0 items-end gap-0.5">
+          <button type="button" className="terminal-tab flex h-8 items-center gap-2 border-b-2 border-(--color-accent) px-3 text-(--color-terminal-text)" aria-label="PowerShell terminal">
+            <span className="terminal-prompt-mark">›_</span>
+            <span className="truncate">PowerShell</span>
+            {workspaceRoot && <span className="hidden text-(--color-text-muted) xl:inline">({basename(workspaceRoot)})</span>}
+          </button>
+        </div>
+        <div className="ml-auto flex items-center gap-0.5 text-(--color-text-muted)">
+          <button type="button" title="New terminal" aria-label="New terminal" onClick={startFreshTerminal} className="terminal-action"><Plus size={15} /></button>
+          <button type="button" title="Split terminal" aria-label="Split terminal" className="terminal-action"><Split size={14} /></button>
+          <button type="button" title="Terminal profiles" aria-label="Terminal profiles" className="terminal-action"><ChevronDown size={14} /></button>
+          <button type="button" title="More actions" aria-label="More actions" className="terminal-action"><MoreHorizontal size={15} /></button>
+          <button type="button" title="Clear terminal" aria-label="Clear terminal" onClick={() => setOutput('')} className="terminal-action"><Trash2 size={14} /></button>
+          {processId !== null && <button type="button" title="Kill terminal process" aria-label="Kill terminal process" onClick={() => void window.api.terminal.stop(processId)} className="terminal-action text-red-400"><Square size={13} /></button>}
+          <button type="button" title="Hide terminal" aria-label="Hide terminal" onClick={toggleTerminal} className="terminal-action"><X size={15} /></button>
+        </div>
       </div>
-    </div>
-    <pre ref={outputRef} className="text-select min-h-0 flex-1 overflow-auto whitespace-pre-wrap px-3 py-2 font-mono text-xs leading-5 text-(--color-text)">{output || 'Run a command in the workspace. Try claude, codex, npm test, or git status.'}</pre>
-    <form className="flex items-center gap-2 border-t border-(--color-border) px-2 py-1.5" onSubmit={(event) => { event.preventDefault(); void run() }}>
-      <ChevronDown size={14} className="text-(--color-accent)" />
-      <input value={command} onChange={(event) => setCommand(event.target.value)} placeholder={processId !== null ? 'Send input to process…' : 'Enter a command…'} className="min-w-0 flex-1 bg-transparent font-mono text-xs outline-none" aria-label="Terminal command" />
-      <button type="submit" disabled={!command.trim()} title={processId !== null ? 'Send input' : 'Run command'} aria-label={processId !== null ? 'Send input' : 'Run command'} className="rounded p-1 text-(--color-accent) hover:bg-(--color-bg-elevated) disabled:opacity-40"><Play size={14} /></button>
-    </form>
-  </section>
+      <div className="terminal-viewport min-h-0 flex-1 overflow-hidden">
+        <pre ref={outputRef} className="text-select h-full overflow-auto whitespace-pre-wrap px-4 py-3 font-mono text-[13px] leading-5">{output || <span className="text-(--color-text-muted)">Type a command to start in {workspaceRoot ? basename(workspaceRoot) : 'the workspace'}.</span>}</pre>
+      </div>
+      <form className="terminal-input-row flex h-9 shrink-0 items-center border-t border-(--color-terminal-border) px-3" onSubmit={(event) => { event.preventDefault(); void run() }}>
+        <span className="mr-2 font-mono text-sm text-(--color-accent)">›</span>
+        <input ref={inputRef} value={command} onChange={(event) => setCommand(event.target.value)} onKeyDown={(event) => { if (event.key === 'ArrowUp') { event.preventDefault(); navigateHistory('up') } else if (event.key === 'ArrowDown') { event.preventDefault(); navigateHistory('down') } }} placeholder={processId !== null ? 'Send input to process…' : 'Type a command…'} className="min-w-0 flex-1 bg-transparent font-mono text-[13px] text-(--color-terminal-text) outline-none placeholder:text-(--color-text-muted)" aria-label="Terminal command" />
+        <button type="submit" disabled={!command.trim()} title={processId !== null ? 'Send input' : 'Run command'} aria-label={processId !== null ? 'Send input' : 'Run command'} className="terminal-submit"><Play size={13} /></button>
+      </form>
+    </section>
+  )
 }

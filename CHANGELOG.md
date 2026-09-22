@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.3 - 2026-09-22
+
+- Reworked the integrated terminal to match the VS Code terminal layout with tabs, profile/actions, compact prompt controls, and a dedicated terminal surface.
+- Added terminal command history navigation with the Up and Down arrows and a New Terminal action.
+
 ## 1.12.2 - 2026-09-21
 
 - Terminal now accepts input for interactive Claude, Codex, and other CLI sessions.
