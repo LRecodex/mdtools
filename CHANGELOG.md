@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.4 - 2026-09-22
+
+- Replaced the custom terminal output/input widget with the `@xterm/xterm` terminal surface used by VS Code.
+- Added direct keyboard input, ANSI/VT rendering, interactive shell support, and terminal scrollback.
+
 ## 1.12.3 - 2026-09-22
 
 - Reworked the integrated terminal to match the VS Code terminal layout with tabs, profile/actions, compact prompt controls, and a dedicated terminal surface.

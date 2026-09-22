@@ -74,13 +74,19 @@ const api = {
     }
   }
   ,terminal: {
-    run: (command: string, cwd: string | null): Promise<{ id: number }> => ipcRenderer.invoke('terminal:run', command, cwd),
+    create: (cwd: string | null): Promise<{ id: number }> => ipcRenderer.invoke('terminal:create', cwd),
+    resize: (id: number, cols: number, rows: number): Promise<void> => ipcRenderer.invoke('terminal:resize', id, cols, rows),
     input: (id: number, input: string): Promise<void> => ipcRenderer.invoke('terminal:input', id, input),
     stop: (id: number): Promise<void> => ipcRenderer.invoke('terminal:stop', id),
-    onOutput: (callback: (payload: { id: number; stream: 'stdout' | 'stderr' | 'exit'; data: string }) => void): (() => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, payload: { id: number; stream: 'stdout' | 'stderr' | 'exit'; data: string }): void => callback(payload)
+    onOutput: (callback: (payload: { id: number; data: string }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { id: number; data: string }): void => callback(payload)
       ipcRenderer.on('terminal:output', listener)
       return () => ipcRenderer.removeListener('terminal:output', listener)
+    },
+    onExit: (callback: (payload: { id: number; exitCode: number; signal?: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { id: number; exitCode: number; signal?: number }): void => callback(payload)
+      ipcRenderer.on('terminal:exit', listener)
+      return () => ipcRenderer.removeListener('terminal:exit', listener)
     }
   }
 }

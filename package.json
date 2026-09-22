@@ -1,6 +1,6 @@
 {
   "name": "mdtools",
-  "version": "1.12.3",
+  "version": "1.12.4",
   "description": "A fast, polished desktop app for browsing, viewing, and authoring Markdown files.",
   "author": "Fauzul Azim",
   "main": "out/main/index.js",
@@ -28,6 +28,7 @@
     "@codemirror/view": "^6.35.3",
     "@lezer/highlight": "^1.2.1",
     "@lezer/markdown": "^1.4.0",
+    "@xterm/xterm": "^6.1.0-beta.304",
     "chokidar": "^4.0.3",
     "codemirror": "^6.0.1",
     "dompurify": "^3.4.12",

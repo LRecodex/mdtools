@@ -1,30 +1,38 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { spawn, type ChildProcess } from 'child_process'
 import { existsSync } from 'fs'
+import { join } from 'path'
 
 const processes = new Map<number, ChildProcess>()
 let nextId = 1
 
 export function registerTerminalHandlers(): void {
-  ipcMain.handle('terminal:run', (event, command: string, cwd: string | null) => {
+  ipcMain.handle('terminal:create', (event, cwd: string | null) => {
     const id = nextId++
     const win = BrowserWindow.fromWebContents(event.sender)
     const workingDirectory = cwd && existsSync(cwd) ? cwd : process.cwd()
-    const child = spawn(command, { cwd: workingDirectory, shell: true, windowsHide: true })
+    const shell = getWindowsShell()
+    const child = spawn(shell.file, shell.args, {
+      cwd: workingDirectory,
+      windowsHide: true,
+      stdio: 'pipe'
+    })
     processes.set(id, child)
-    const send = (stream: 'stdout' | 'stderr' | 'exit', data: string): void => {
+    const send = (data: string): void => {
       if (!win || win.isDestroyed()) return
-      win.webContents.send('terminal:output', { id, stream, data })
+      win.webContents.send('terminal:output', { id, data })
     }
-    child.stdout?.on('data', (data: Buffer) => send('stdout', data.toString()))
-    child.stderr?.on('data', (data: Buffer) => send('stderr', data.toString()))
-    child.on('error', (error) => send('stderr', `${error.message}\n`))
-    child.on('close', (code, signal) => {
-      send('exit', `\n[process exited${code == null ? ` (${signal ?? 'unknown'})` : ` with code ${code}`}]\n`)
+    child.stdout?.on('data', (data: Buffer) => send(data.toString()))
+    child.stderr?.on('data', (data: Buffer) => send(data.toString()))
+    child.on('error', (error) => send(`\r\n\x1b[31m${error.message}\x1b[0m\r\n`))
+    child.on('close', (code) => {
+      if (win && !win.isDestroyed()) win.webContents.send('terminal:exit', { id, exitCode: code ?? 1 })
       processes.delete(id)
     })
     return { id }
   })
+
+  ipcMain.handle('terminal:resize', () => undefined)
 
   ipcMain.handle('terminal:stop', (_event, id: number) => {
     const child = processes.get(id)
@@ -36,4 +44,11 @@ export function registerTerminalHandlers(): void {
     const child = processes.get(id)
     if (child?.stdin?.writable) child.stdin.write(input)
   })
+}
+
+function getWindowsShell(): { file: string; args: string[] } {
+  const systemRoot = process.env['SystemRoot'] ?? 'C:\\Windows'
+  const powershell = join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  if (existsSync(powershell)) return { file: powershell, args: ['-NoLogo', '-NoExit'] }
+  return { file: process.env['ComSpec'] ?? 'cmd.exe', args: ['/d', '/k'] }
 }

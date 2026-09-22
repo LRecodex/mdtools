@@ -133,6 +133,19 @@ body {
   font-weight: 700;
 }
 
+.terminal-viewport .xterm {
+  height: 100%;
+  padding: 8px 12px;
+}
+
+.terminal-viewport .xterm-viewport {
+  overflow-y: auto !important;
+}
+
+.terminal-viewport .xterm-screen {
+  cursor: text;
+}
+
 .markdown-toolbar::-webkit-scrollbar {
   display: none;
 }
