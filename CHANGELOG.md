@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.6 - 2026-10-29
+
+- Added browsing support for Windows folder shortcuts (`.lnk`) in the workspace sidebar.
+
 ## 1.12.4 - 2026-09-22
 
 - Replaced the custom terminal output/input widget with the `@xterm/xterm` terminal surface used by VS Code.

@@ -1,11 +1,28 @@
 import { ipcMain, shell } from 'electron'
 import { promises as fs } from 'fs'
 import { join, extname, dirname, basename, parse, relative, resolve, sep } from 'path'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 import mammoth from 'mammoth'
 import ExcelJS from 'exceljs'
 import { documentKind, isCreatableKind, isEditableKind, type FileNode, type OpenedDocument, type SearchResult, type SpreadsheetCellStyle, type SpreadsheetData, type SpreadsheetMerge } from '../../shared/types'
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdx'])
+const execFileAsync = promisify(execFile)
+
+/** Resolve Windows folder shortcuts so they can be browsed like directories. */
+async function shortcutDirectoryTarget(path: string): Promise<string | undefined> {
+  if (process.platform !== 'win32' || extname(path).toLowerCase() !== '.lnk') return undefined
+  try {
+    const script = '$s=(New-Object -ComObject WScript.Shell).CreateShortcut($args[0]); $s.TargetPath'
+    const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script, path], { windowsHide: true, timeout: 5000 })
+    const target = stdout.trim()
+    if (target && (await fs.stat(target)).isDirectory()) return target
+  } catch {
+    // An unresolved, broken, or non-folder shortcut remains an ordinary file.
+  }
+  return undefined
+}
 
 function isMarkdownFile(name: string): boolean {
   return MARKDOWN_EXTENSIONS.has(extname(name).toLowerCase())
@@ -138,15 +155,21 @@ function readDirEntries(path: string) {
 }
 
 async function readDir(path: string): Promise<FileNode[]> {
-  const entries = await readDirEntries(path)
-  const nodes: FileNode[] = entries
+  const directoryPath = await shortcutDirectoryTarget(path) ?? path
+  const entries = await readDirEntries(directoryPath)
+  const nodes: FileNode[] = await Promise.all(entries
     .filter((entry) => !entry.name.startsWith('.'))
-    .map((entry) => ({
-      name: entry.name,
-      path: join(path, entry.name),
-      isDirectory: entry.isDirectory(),
-      isMarkdown: !entry.isDirectory() && isMarkdownFile(entry.name),
-      kind: entry.isDirectory() ? 'unsupported' : documentKind(entry.name)
+    .map(async (entry) => {
+      const entryPath = join(directoryPath, entry.name)
+      const shortcutTarget = entry.isFile() ? await shortcutDirectoryTarget(entryPath) : undefined
+      const isDirectory = entry.isDirectory() || Boolean(shortcutTarget)
+      return {
+        name: entry.name,
+        path: entryPath,
+        isDirectory,
+        isMarkdown: !isDirectory && isMarkdownFile(entry.name),
+        kind: isDirectory ? 'unsupported' as const : documentKind(entry.name)
+      }
     }))
 
   nodes.sort((a, b) => {
@@ -305,6 +328,7 @@ export function registerFileSystemHandlers(): void {
   })
 
   ipcMain.handle('fs:createFile', async (_event, dirPath: string, name: string, content = '') => {
+    dirPath = await shortcutDirectoryTarget(dirPath) ?? dirPath
     const fileName = withMarkdownExtension(validateChildName(name))
     if (!isCreatableKind(documentKind(fileName))) {
       throw new Error('Only Markdown, TXT, and JSON files can be created')
@@ -315,6 +339,7 @@ export function registerFileSystemHandlers(): void {
   })
 
   ipcMain.handle('fs:createFolder', async (_event, dirPath: string, name: string) => {
+    dirPath = await shortcutDirectoryTarget(dirPath) ?? dirPath
     const target = join(dirPath, validateChildName(name))
     await fs.mkdir(target)
     return target
