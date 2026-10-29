@@ -14,8 +14,13 @@ const execFileAsync = promisify(execFile)
 async function shortcutDirectoryTarget(path: string): Promise<string | undefined> {
   if (process.platform !== 'win32' || extname(path).toLowerCase() !== '.lnk') return undefined
   try {
-    const script = '$s=(New-Object -ComObject WScript.Shell).CreateShortcut($args[0]); $s.TargetPath'
-    const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script, path], { windowsHide: true, timeout: 5000 })
+    // -Command appends trailing CLI arguments to the command text instead of
+    // exposing them through $args. Embed a safely escaped path in an encoded
+    // command so spaces and shell metacharacters in workspace paths are safe.
+    const shortcutPath = path.replace(/'/g, "''")
+    const script = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${shortcutPath}'); $s.TargetPath`
+    const encodedScript = Buffer.from(script, 'utf16le').toString('base64')
+    const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encodedScript], { windowsHide: true, timeout: 5000 })
     const target = stdout.trim()
     if (target && (await fs.stat(target)).isDirectory()) return target
   } catch {

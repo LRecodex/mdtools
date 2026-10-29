@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.7 - 2026-10-29
+
+- Fixed folder shortcut detection so Windows `.lnk` shortcuts can be expanded in the workspace sidebar.
+
 ## 1.12.6 - 2026-10-29
 
 - Added browsing support for Windows folder shortcuts (`.lnk`) in the workspace sidebar.
