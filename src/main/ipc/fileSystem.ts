@@ -163,7 +163,10 @@ async function readDir(path: string): Promise<FileNode[]> {
   const directoryPath = await shortcutDirectoryTarget(path) ?? path
   const entries = await readDirEntries(directoryPath)
   const nodes: FileNode[] = await Promise.all(entries
-    .filter((entry) => !entry.name.startsWith('.'))
+    // Dotfiles and dotfolders often contain useful workspace instructions and
+    // configuration (for example, .claude). Keep the Git internals out of the
+    // navigable tree, while allowing the rest to be opened like any other file.
+    .filter((entry) => entry.name !== '.git')
     .map(async (entry) => {
       const entryPath = join(directoryPath, entry.name)
       const shortcutTarget = entry.isFile() ? await shortcutDirectoryTarget(entryPath) : undefined
@@ -241,7 +244,7 @@ async function searchFiles(root: string, rawQuery: string): Promise<SearchResult
     }
     for (const entry of entries) {
       if (results.length >= SEARCH_RESULT_CAP) return
-      if (entry.name.startsWith('.')) continue
+      if (entry.name === '.git') continue
       const full = join(dir, entry.name)
       const pathMatches = terms.every((term) => relative(root, full).replace(/\\/g, '/').toLocaleLowerCase().includes(term))
       if (entry.isDirectory()) {

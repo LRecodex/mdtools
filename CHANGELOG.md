@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.8 - 2026-10-29
+
+- Show dotfiles and dotfolders in the workspace sidebar and Quick Open so workspace configuration such as `.claude` can be browsed and read.
+
 ## 1.12.7 - 2026-10-29
 
 - Fixed folder shortcut detection so Windows `.lnk` shortcuts can be expanded in the workspace sidebar.
